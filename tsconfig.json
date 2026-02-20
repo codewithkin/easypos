@@ -1,0 +1,3 @@
+{
+  "extends": "@easypos/config/tsconfig.base.json"
+}

@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "scheme": "easypos",
+    "userInterfaceStyle": "automatic",
+    "orientation": "default",
+    "web": {
+      "bundler": "metro"
+    },
+    "name": "easypos",
+    "slug": "easypos",
+    "plugins": ["expo-font"],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
