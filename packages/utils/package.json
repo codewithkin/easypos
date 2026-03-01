@@ -1,0 +1,15 @@
+{
+  "name": "@easypos/utils",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    }
+  },
+  "devDependencies": {
+    "@easypos/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
