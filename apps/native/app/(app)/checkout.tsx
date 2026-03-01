@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/store/auth";
 import { useApiPost } from "@/hooks/use-api";
+import { useRole } from "@/hooks/use-role";
 import { formatCurrency, PAYMENT_METHOD_LABELS } from "@easypos/utils";
 import type { Sale, PaymentMethod } from "@easypos/types";
 import { cn } from "@/lib/utils";
@@ -25,8 +26,10 @@ export default function CheckoutScreen() {
     const params = useLocalSearchParams<{ cart: string }>();
     const user = useAuthStore((s) => s.user);
 
+    const { canManage } = useRole();
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
     const [amountTendered, setAmountTendered] = useState("");
+    const [discount, setDiscount] = useState("");
 
     const cartItems: { productId: string; quantity: number }[] = params.cart
         ? JSON.parse(params.cart)
@@ -35,6 +38,7 @@ export default function CheckoutScreen() {
     const { mutate: createSale, isPending } = useApiPost<Sale, {
         items: { productId: string; quantity: number }[];
         paymentMethod: PaymentMethod;
+        discount?: number;
         amountTendered?: number;
     }>({
         path: "/sales",
@@ -55,6 +59,10 @@ export default function CheckoutScreen() {
             items: cartItems,
             paymentMethod,
         };
+
+        if (canManage && discount) {
+            body.discount = parseFloat(discount);
+        }
 
         if (paymentMethod === "CASH" && amountTendered) {
             body.amountTendered = parseFloat(amountTendered);
@@ -122,6 +130,27 @@ export default function CheckoutScreen() {
                         ))}
                     </View>
                 </View>
+
+                {/* Discount - only for admin/manager */}
+                {canManage && (
+                    <View className="mt-6">
+                        <Text className="text-muted-foreground text-xs uppercase tracking-wider mb-2">
+                            Discount Amount (optional)
+                        </Text>
+                        <Input
+                            placeholder="0"
+                            keyboardType="numeric"
+                            value={discount}
+                            onChangeText={setDiscount}
+                            className="h-12 text-lg text-center bg-card"
+                        />
+                        {discount !== "" && parseFloat(discount) > 0 && (
+                            <Text className="text-primary text-xs mt-1.5 text-center">
+                                Discount applied: {formatCurrency(parseFloat(discount) || 0)}
+                            </Text>
+                        )}
+                    </View>
+                )}
 
                 {/* Amount tendered - only for cash */}
                 {paymentMethod === "CASH" && (
