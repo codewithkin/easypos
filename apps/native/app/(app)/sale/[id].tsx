@@ -54,8 +54,7 @@ export default function SaleDetailScreen() {
     });
 
     const canVoid =
-        sale?.status === "COMPLETED" && (user?.role === "OWNER" || user?.role === "MANAGER");
-
+        sale?.status === "COMPLETED" && (user?.role === "ADMIN" || user?.role === "MANAGER");
     function handleVoid() {
         Alert.alert("Void Sale", "This action cannot be undone. Continue?", [
             { text: "Cancel", style: "cancel" },

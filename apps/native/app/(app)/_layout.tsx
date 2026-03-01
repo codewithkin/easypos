@@ -6,6 +6,8 @@ export default function AppLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="checkout" options={{ presentation: "modal" }} />
             <Stack.Screen name="sale/[id]" />
-        </Stack>
-    );
-}
+            <Stack.Screen name="products" />
+            <Stack.Screen name="products/add" />
+            <Stack.Screen name="products/[id]" />
+            <Stack.Screen name="team" />
+            <Stack.Screen name="team/invite" />
