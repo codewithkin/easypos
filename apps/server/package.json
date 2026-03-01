@@ -12,6 +12,8 @@
   "dependencies": {
     "@easypos/db": "workspace:*",
     "@easypos/env": "workspace:*",
+    "@easypos/types": "workspace:*",
+    "@easypos/utils": "workspace:*",
     "dotenv": "catalog:",
     "hono": "^4.8.2",
     "zod": "catalog:"
