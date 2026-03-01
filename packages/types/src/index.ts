@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // ── Enums ──────────────────────────────────────────────────────────
 
-export const roleSchema = z.enum(["OWNER", "MANAGER", "CASHIER"]);
+export const roleSchema = z.enum(["ADMIN", "MANAGER", "STAFF"]);
 export type Role = z.infer<typeof roleSchema>;
 
 export const paymentMethodSchema = z.enum(["CASH", "MOBILE_MONEY", "CARD"]);
@@ -81,6 +81,7 @@ export const saleItemSchema = z.object({
   productName: z.string(),
   quantity: z.number().int().positive(),
   unitPrice: z.number(),
+  subtotal: z.number(), // alias of total column
   total: z.number(),
 });
 export type SaleItem = z.infer<typeof saleItemSchema>;
@@ -89,8 +90,11 @@ export const saleSchema = z.object({
   id: z.string(),
   receiptNumber: z.string(),
   subtotal: z.number(),
+  discount: z.number(),
   tax: z.number(),
   total: z.number(),
+  amountTendered: z.number().nullable(),
+  change: z.number().nullable(),
   paymentMethod: paymentMethodSchema,
   status: saleStatusSchema,
   note: z.string().nullable(),
@@ -171,7 +175,7 @@ export const createUserRequestSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(2),
-  role: roleSchema,
+  role: z.enum(["MANAGER", "STAFF"]),
   branchId: z.string().optional(),
 });
 export type CreateUserRequest = z.infer<typeof createUserRequestSchema>;
@@ -183,6 +187,14 @@ export const updateUserRequestSchema = z.object({
   isActive: z.boolean().optional(),
 });
 export type UpdateUserRequest = z.infer<typeof updateUserRequestSchema>;
+
+export const inviteUserRequestSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(2),
+  role: z.enum(["MANAGER", "STAFF"]),
+  branchId: z.string().optional(),
+});
+export type InviteUserRequest = z.infer<typeof inviteUserRequestSchema>;
 
 export const createCategoryRequestSchema = z.object({
   name: z.string().min(1),
@@ -214,6 +226,8 @@ export const createSaleRequestSchema = z.object({
     .min(1),
   paymentMethod: paymentMethodSchema,
   tax: z.number().min(0).optional(),
+  discount: z.number().min(0).optional(),
+  amountTendered: z.number().positive().optional(),
   note: z.string().optional(),
   deviceId: z.string().optional(),
 });

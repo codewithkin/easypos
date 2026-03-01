@@ -103,9 +103,9 @@ export function getPaginationSkip(page: number, pageSize: number) {
 // ── Label Maps ─────────────────────────────────────────────────────
 
 export const ROLE_LABELS: Record<string, string> = {
-  OWNER: "Owner",
+  ADMIN: "Admin",
   MANAGER: "Manager",
-  CASHIER: "Cashier",
+  STAFF: "Staff",
 };
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {

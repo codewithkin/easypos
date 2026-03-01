@@ -12,9 +12,9 @@ datasource db {
 // ── Enums ──────────────────────────────────────────────────────────
 
 enum Role {
-  OWNER
+  ADMIN
   MANAGER
-  CASHIER
+  STAFF
 }
 
 enum PaymentMethod {
@@ -77,7 +77,7 @@ model User {
   passwordHash String
   name         String
   pin          String?
-  role         Role     @default(CASHIER)
+  role         Role     @default(STAFF)
   isActive     Boolean  @default(true)
   orgId        String
   branchId     String?
@@ -185,8 +185,11 @@ model Sale {
   id            String        @id @default(cuid())
   receiptNumber String
   subtotal      Float
+  discount      Float         @default(0)
   tax           Float         @default(0)
   total         Float
+  amountTendered Float?
+  change        Float?
   paymentMethod PaymentMethod @default(CASH)
   status        SaleStatus    @default(COMPLETED)
   note          String?
