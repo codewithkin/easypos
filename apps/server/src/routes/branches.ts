@@ -38,7 +38,7 @@ const branches = new Hono<Env>()
   })
 
   // ── Create branch ─────────────────────────────────────────────
-  .post("/", requireRole("OWNER"), zBody(createBranchRequestSchema), async (c) => {
+  .post("/", requireRole("ADMIN"), zBody(createBranchRequestSchema), async (c) => {
     const orgId = c.get("orgId");
     const data = c.req.valid("json");
 
@@ -50,7 +50,7 @@ const branches = new Hono<Env>()
   })
 
   // ── Update branch ─────────────────────────────────────────────
-  .put("/:id", requireRole("OWNER", "MANAGER"), zBody(updateBranchRequestSchema), async (c) => {
+  .put("/:id", requireRole("ADMIN", "MANAGER"), zBody(updateBranchRequestSchema), async (c) => {
     const orgId = c.get("orgId");
     const id = c.req.param("id");
     const data = c.req.valid("json");
@@ -63,7 +63,7 @@ const branches = new Hono<Env>()
   })
 
   // ── Delete branch ─────────────────────────────────────────────
-  .delete("/:id", requireRole("OWNER"), async (c) => {
+  .delete("/:id", requireRole("ADMIN"), async (c) => {
     const orgId = c.get("orgId");
     const id = c.req.param("id");
 

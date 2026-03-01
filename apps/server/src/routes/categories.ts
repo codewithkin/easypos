@@ -23,7 +23,7 @@ const categories = new Hono<Env>()
   })
 
   // ── Create category ───────────────────────────────────────────
-  .post("/", requireRole("OWNER", "MANAGER"), zBody(createCategoryRequestSchema), async (c) => {
+  .post("/", requireRole("ADMIN", "MANAGER"), zBody(createCategoryRequestSchema), async (c) => {
     const orgId = c.get("orgId");
     const { name } = c.req.valid("json");
 
@@ -35,7 +35,7 @@ const categories = new Hono<Env>()
   })
 
   // ── Update category ───────────────────────────────────────────
-  .put("/:id", requireRole("OWNER", "MANAGER"), zBody(createCategoryRequestSchema), async (c) => {
+  .put("/:id", requireRole("ADMIN", "MANAGER"), zBody(createCategoryRequestSchema), async (c) => {
     const orgId = c.get("orgId");
     const id = c.req.param("id");
     const { name } = c.req.valid("json");
@@ -48,7 +48,7 @@ const categories = new Hono<Env>()
   })
 
   // ── Delete category ───────────────────────────────────────────
-  .delete("/:id", requireRole("OWNER"), async (c) => {
+  .delete("/:id", requireRole("ADMIN"), async (c) => {
     const orgId = c.get("orgId");
     const id = c.req.param("id");
 

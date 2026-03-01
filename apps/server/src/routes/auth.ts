@@ -13,6 +13,7 @@ import { hashPassword, verifyPassword } from "../lib/password.js";
 import { zBody } from "../lib/validate.js";
 import type { Env } from "../lib/context.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { sendPasswordResetEmail } from "../lib/email.js";
 
 function userToResponse(user: any, org: any, branch: any) {
   return {
@@ -54,7 +55,7 @@ const auth = new Hono<Env>()
       });
 
       const user = await tx.user.create({
-        data: { email, passwordHash, name, role: "OWNER", orgId: org.id, branchId: branch.id },
+        data: { email, passwordHash, name, role: "ADMIN", orgId: org.id, branchId: branch.id },
       });
 
       return { org, user, branch };
@@ -177,8 +178,9 @@ const auth = new Hono<Env>()
           expiresAt: new Date(Date.now() + 15 * 60 * 1000),
         },
       });
-      // TODO: integrate email service (Resend / SendGrid)
-      console.log(`[DEV] Password reset code for ${email}: ${code}`);
+      await sendPasswordResetEmail({ to: user.email, name: user.name, code }).catch(() => {
+        console.error("[email] Failed to send password reset email to", user.email);
+      });
     }
 
     return c.json({ message: "If the email exists, a reset code has been sent" });

@@ -7,7 +7,7 @@ import { requireRole } from "../middleware/rbac.js";
 
 const reports = new Hono<Env>()
   .use(authMiddleware)
-  .use(requireRole("OWNER", "MANAGER"))
+  .use(requireRole("ADMIN", "MANAGER"))
 
   // ── Daily summary ─────────────────────────────────────────────
   .get("/daily", async (c) => {

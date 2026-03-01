@@ -1,7 +1,17 @@
 import { Hono } from "hono";
 import db from "@easypos/db";
-import { createSaleRequestSchema, voidSaleRequestSchema, paginationQuerySchema } from "@easypos/types";
-import { generateReceiptNumber, getPaginationMeta, getPaginationSkip, getStartOfDay, getEndOfDay } from "@easypos/utils";
+import {
+  createSaleRequestSchema,
+  voidSaleRequestSchema,
+  paginationQuerySchema,
+} from "@easypos/types";
+import {
+  generateReceiptNumber,
+  getPaginationMeta,
+  getPaginationSkip,
+  getStartOfDay,
+  getEndOfDay,
+} from "@easypos/utils";
 import { zBody, zQuery } from "../lib/validate.js";
 import type { Env } from "../lib/context.js";
 import { authMiddleware } from "../middleware/auth.js";
@@ -15,7 +25,7 @@ const sales = new Hono<Env>()
     const userId = c.get("userId");
     const orgId = c.get("orgId");
     const branchId = c.get("branchId");
-    const { items, paymentMethod, tax, note, deviceId } = c.req.valid("json");
+    const { items, paymentMethod, tax, discount, amountTendered, note, deviceId } = c.req.valid("json");
 
     if (!branchId) {
       return c.json({ error: "You must be assigned to a branch to create sales" }, 400);
@@ -35,26 +45,33 @@ const sales = new Hono<Env>()
 
     const saleItems = items.map((item) => {
       const product = productMap.get(item.productId)!;
+      const subtotal = product.price * item.quantity;
       return {
         productId: product.id,
         productName: product.name,
         quantity: item.quantity,
         unitPrice: product.price,
-        total: product.price * item.quantity,
+        total: subtotal,
       };
     });
 
     const subtotal = saleItems.reduce((sum, item) => sum + item.total, 0);
+    const discountAmount = discount ?? 0;
     const taxAmount = tax ?? 0;
-    const total = subtotal + taxAmount;
+    const total = subtotal - discountAmount + taxAmount;
+    const change =
+      amountTendered != null && amountTendered >= total ? amountTendered - total : null;
     const receiptNumber = generateReceiptNumber();
 
     const sale = await db.sale.create({
       data: {
         receiptNumber,
         subtotal,
+        discount: discountAmount,
         tax: taxAmount,
         total,
+        amountTendered: amountTendered ?? null,
+        change,
         paymentMethod,
         note,
         cashierId: userId,
@@ -84,8 +101,8 @@ const sales = new Hono<Env>()
       createdAt: { gte: getStartOfDay(date), lte: getEndOfDay(date) },
     };
 
-    // Cashiers see only their own sales, managers see branch sales
-    if (role === "CASHIER") {
+    // Staff see only their own sales, managers see branch sales
+    if (role === "STAFF") {
       where.cashierId = c.get("userId");
     } else if (role === "MANAGER" && branchId) {
       where.branchId = branchId;
@@ -128,7 +145,7 @@ const sales = new Hono<Env>()
   })
 
   // ── Void sale ─────────────────────────────────────────────────
-  .post("/:id/void", requireRole("OWNER", "MANAGER"), zBody(voidSaleRequestSchema), async (c) => {
+  .post("/:id/void", requireRole("ADMIN", "MANAGER"), zBody(voidSaleRequestSchema), async (c) => {
     const orgId = c.get("orgId");
     const userId = c.get("userId");
     const id = c.req.param("id");

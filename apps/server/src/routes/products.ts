@@ -57,7 +57,7 @@ const products = new Hono<Env>()
   })
 
   // ── Create product ────────────────────────────────────────────
-  .post("/", requireRole("OWNER", "MANAGER"), zBody(createProductRequestSchema), async (c) => {
+  .post("/", requireRole("ADMIN", "MANAGER"), zBody(createProductRequestSchema), async (c) => {
     const orgId = c.get("orgId");
     const data = c.req.valid("json");
 
@@ -75,7 +75,7 @@ const products = new Hono<Env>()
   })
 
   // ── Update product ────────────────────────────────────────────
-  .put("/:id", requireRole("OWNER", "MANAGER"), zBody(updateProductRequestSchema), async (c) => {
+  .put("/:id", requireRole("ADMIN", "MANAGER"), zBody(updateProductRequestSchema), async (c) => {
     const orgId = c.get("orgId");
     const id = c.req.param("id");
     const data = c.req.valid("json");
