@@ -1,10 +1,257 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated"
+  provider     = "prisma-client"
+  output       = "../generated"
   moduleFormat = "esm"
-  runtime = "bun"
+  runtime      = "bun"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ── Enums ──────────────────────────────────────────────────────────
+
+enum Role {
+  OWNER
+  MANAGER
+  CASHIER
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  CARD
+}
+
+enum SaleStatus {
+  COMPLETED
+  VOIDED
+  REFUNDED
+}
+
+// ── Organization (Tenant) ──────────────────────────────────────────
+
+model Organization {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  currency      String   @default("UGX")
+  receiptHeader String?
+  receiptFooter String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  branches   Branch[]
+  users      User[]
+  categories Category[]
+  products   Product[]
+  sales      Sale[]
+  auditLogs  AuditLog[]
+}
+
+// ── Branch / Location ──────────────────────────────────────────────
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  phone     String?
+  isActive  Boolean  @default(true)
+  orgId     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  users   User[]
+  devices Device[]
+  sales   Sale[]
+
+  @@index([orgId])
+}
+
+// ── User ───────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  pin          String?
+  role         Role     @default(CASHIER)
+  isActive     Boolean  @default(true)
+  orgId        String
+  branchId     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  org            Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  branch         Branch?         @relation(fields: [branchId], references: [id])
+  sales          Sale[]          @relation("CashierSales")
+  refreshTokens  RefreshToken[]
+  passwordResets PasswordReset[]
+  auditLogs      AuditLog[]
+
+  @@index([orgId])
+  @@index([branchId])
+}
+
+// ── Auth ───────────────────────────────────────────────────────────
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+model PasswordReset {
+  id        String    @id @default(cuid())
+  code      String
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
+}
+
+// ── Device / Register ──────────────────────────────────────────────
+
+model Device {
+  id               String    @id @default(cuid())
+  name             String
+  deviceIdentifier String
+  branchId         String
+  lastSeenAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  sales  Sale[]
+
+  @@unique([deviceIdentifier, branchId])
+  @@index([branchId])
+}
+
+// ── Catalog ────────────────────────────────────────────────────────
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  orgId     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@index([orgId])
+}
+
+model Product {
+  id         String   @id @default(cuid())
+  name       String
+  sku        String
+  barcode    String?
+  price      Float
+  cost       Float?
+  isActive   Boolean  @default(true)
+  categoryId String?
+  orgId      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category  Category?    @relation(fields: [categoryId], references: [id])
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  saleItems SaleItem[]
+
+  @@unique([sku, orgId])
+  @@index([orgId])
+  @@index([categoryId])
+}
+
+// ── Sales Ledger ───────────────────────────────────────────────────
+
+model Sale {
+  id            String        @id @default(cuid())
+  receiptNumber String
+  subtotal      Float
+  tax           Float         @default(0)
+  total         Float
+  paymentMethod PaymentMethod @default(CASH)
+  status        SaleStatus    @default(COMPLETED)
+  note          String?
+  cashierId     String
+  branchId      String
+  orgId         String
+  deviceId      String?
+  createdAt     DateTime      @default(now())
+
+  cashier  User         @relation("CashierSales", fields: [cashierId], references: [id])
+  branch   Branch       @relation(fields: [branchId], references: [id])
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  device   Device?      @relation(fields: [deviceId], references: [id])
+  items    SaleItem[]
+  receipts Receipt[]
+
+  @@index([orgId])
+  @@index([branchId])
+  @@index([cashierId])
+  @@index([createdAt])
+}
+
+model SaleItem {
+  id          String @id @default(cuid())
+  saleId      String
+  productId   String
+  productName String
+  quantity    Int
+  unitPrice   Float
+  total       Float
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+}
+
+// ── Receipts ───────────────────────────────────────────────────────
+
+model Receipt {
+  id          String   @id @default(cuid())
+  saleId      String
+  printedAt   DateTime @default(now())
+  printerName String?
+
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([saleId])
+}
+
+// ── Audit Trail ────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  details   String?
+  metadata  Json?
+  userId    String
+  orgId     String
+  createdAt DateTime @default(now())
+
+  user User         @relation(fields: [userId], references: [id])
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([userId])
+  @@index([createdAt])
 }
