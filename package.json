@@ -35,6 +35,8 @@
   "devDependencies": {
     "@easypos/config": "workspace:*",
     "@types/bun": "catalog:",
+    "@types/nodemailer": "^7.0.11",
+    "server": "workspace:*",
     "turbo": "^2.6.3",
     "typescript": "catalog:"
   },
