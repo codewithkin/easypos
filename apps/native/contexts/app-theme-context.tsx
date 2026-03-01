@@ -1,10 +1,10 @@
 import React, { createContext, useCallback, useContext, useMemo } from "react";
-import { Uniwind, useUniwind } from "uniwind";
+import { useColorScheme } from "nativewind";
 
 type ThemeName = "light" | "dark";
 
 type AppThemeContextType = {
-  currentTheme: string;
+  currentTheme: ThemeName;
   isLight: boolean;
   isDark: boolean;
   setTheme: (theme: ThemeName) => void;
@@ -14,33 +14,27 @@ type AppThemeContextType = {
 const AppThemeContext = createContext<AppThemeContextType | undefined>(undefined);
 
 export const AppThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const { theme } = useUniwind();
+  const { colorScheme, setColorScheme, toggleColorScheme } = useColorScheme();
 
-  const isLight = useMemo(() => {
-    return theme === "light";
-  }, [theme]);
+  const isLight = colorScheme === "light";
+  const isDark = colorScheme === "dark";
 
-  const isDark = useMemo(() => {
-    return theme === "dark";
-  }, [theme]);
-
-  const setTheme = useCallback((newTheme: ThemeName) => {
-    Uniwind.setTheme(newTheme);
-  }, []);
-
-  const toggleTheme = useCallback(() => {
-    Uniwind.setTheme(theme === "light" ? "dark" : "light");
-  }, [theme]);
+  const setTheme = useCallback(
+    (newTheme: ThemeName) => {
+      setColorScheme(newTheme);
+    },
+    [setColorScheme],
+  );
 
   const value = useMemo(
     () => ({
-      currentTheme: theme,
+      currentTheme: (colorScheme ?? "dark") as ThemeName,
       isLight,
       isDark,
       setTheme,
-      toggleTheme,
+      toggleTheme: toggleColorScheme,
     }),
-    [theme, isLight, isDark, setTheme, toggleTheme],
+    [colorScheme, isLight, isDark, setTheme, toggleColorScheme],
   );
 
   return <AppThemeContext.Provider value={value}>{children}</AppThemeContext.Provider>;
