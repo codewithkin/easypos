@@ -14,6 +14,7 @@ import { zBody } from "../lib/validate.js";
 import type { Env } from "../lib/context.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { sendPasswordResetEmail } from "../lib/email.js";
+import { PLAN_LIMITS } from "@easypos/types";
 
 function userToResponse(user: any, org: any, branch: any) {
   return {
@@ -26,7 +27,22 @@ function userToResponse(user: any, org: any, branch: any) {
     branchId: user.branchId,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-    org: { id: org.id, name: org.name, slug: org.slug, currency: org.currency },
+    org: {
+      id: org.id,
+      name: org.name,
+      slug: org.slug,
+      currency: org.currency,
+      plan: org.plan,
+      maxUsers: org.maxUsers,
+      maxMonthlyInvoices: org.maxMonthlyInvoices,
+      maxProducts: org.maxProducts,
+      maxCategories: org.maxCategories,
+      maxBranches: org.maxBranches,
+      currentMonthInvoices: org.currentMonthInvoices,
+      pendingOverageCharges: org.pendingOverageCharges,
+      billingCycleStart: org.billingCycleStart,
+      nextBillingDate: org.nextBillingDate,
+    },
     branch: branch ? { id: branch.id, name: branch.name } : null,
   };
 }
@@ -46,8 +62,24 @@ const auth = new Hono<Env>()
     const slug = slugify(orgName);
 
     const result = await db.$transaction(async (tx) => {
+      const now = new Date();
+      const nextBilling = new Date(now);
+      nextBilling.setDate(nextBilling.getDate() + 30);
+
+      const starterLimits = PLAN_LIMITS.starter;
       const org = await tx.organization.create({
-        data: { name: orgName, slug: `${slug}-${Date.now().toString(36)}` },
+        data: {
+          name: orgName,
+          slug: `${slug}-${Date.now().toString(36)}`,
+          plan: "starter",
+          maxUsers: starterLimits.users,
+          maxMonthlyInvoices: starterLimits.monthlyInvoices,
+          maxProducts: starterLimits.products,
+          maxCategories: starterLimits.categories,
+          maxBranches: starterLimits.branches,
+          billingCycleStart: now,
+          nextBillingDate: nextBilling,
+        },
       });
 
       const branch = await tx.branch.create({

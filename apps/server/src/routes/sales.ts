@@ -16,6 +16,7 @@ import { zBody, zQuery } from "../lib/validate.js";
 import type { Env } from "../lib/context.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { requireRole } from "../middleware/rbac.js";
+import { checkInvoiceLimit, incrementInvoiceCount } from "../lib/plan-limits.js";
 
 const sales = new Hono<Env>()
   .use(authMiddleware)
@@ -29,6 +30,12 @@ const sales = new Hono<Env>()
 
     if (!branchId) {
       return c.json({ error: "You must be assigned to a branch to create sales" }, 400);
+    }
+
+    // ── Plan enforcement: invoice limit ───────────────────────────
+    const invoiceCheck = await checkInvoiceLimit(orgId);
+    if (!invoiceCheck.allowed) {
+      return c.json({ error: invoiceCheck.reason }, 403);
     }
 
     // Look up product prices
@@ -82,6 +89,9 @@ const sales = new Hono<Env>()
       },
       include: { items: true },
     });
+
+    // Track invoice count for billing
+    await incrementInvoiceCount(orgId, invoiceCheck.overage);
 
     return c.json(sale, 201);
   })

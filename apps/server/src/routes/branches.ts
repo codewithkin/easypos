@@ -5,6 +5,7 @@ import { zBody } from "../lib/validate.js";
 import type { Env } from "../lib/context.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { requireRole } from "../middleware/rbac.js";
+import { checkBranchLimit } from "../lib/plan-limits.js";
 
 const branches = new Hono<Env>()
   .use(authMiddleware)
@@ -41,6 +42,12 @@ const branches = new Hono<Env>()
   .post("/", requireRole("ADMIN"), zBody(createBranchRequestSchema), async (c) => {
     const orgId = c.get("orgId");
     const data = c.req.valid("json");
+
+    // ── Plan enforcement: branch limit (hard block) ───────────────
+    const branchCheck = await checkBranchLimit(orgId);
+    if (!branchCheck.allowed) {
+      return c.json({ error: branchCheck.reason }, 403);
+    }
 
     const branch = await db.branch.create({
       data: { ...data, orgId },

@@ -5,6 +5,7 @@ import { zBody } from "../lib/validate.js";
 import type { Env } from "../lib/context.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { requireRole } from "../middleware/rbac.js";
+import { checkCategoryLimit, recordCategoryOverage } from "../lib/plan-limits.js";
 
 const categories = new Hono<Env>()
   .use(authMiddleware)
@@ -27,9 +28,18 @@ const categories = new Hono<Env>()
     const orgId = c.get("orgId");
     const { name } = c.req.valid("json");
 
+    // ── Plan enforcement: category limit ──────────────────────────
+    const categoryCheck = await checkCategoryLimit(orgId);
+    if (!categoryCheck.allowed) {
+      return c.json({ error: categoryCheck.reason }, 403);
+    }
+
     const category = await db.category.create({
       data: { name, orgId },
     });
+
+    // Track category overage if applicable
+    if (categoryCheck.overage) await recordCategoryOverage(orgId);
 
     return c.json(category, 201);
   })

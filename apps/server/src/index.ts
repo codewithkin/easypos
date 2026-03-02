@@ -12,6 +12,7 @@ import categories from "./routes/categories.js";
 import sales from "./routes/sales.js";
 import devices from "./routes/devices.js";
 import reports from "./routes/reports.js";
+import billing, { billingWebhook } from "./routes/billing.js";
 
 const app = new Hono()
   .basePath("/api")
@@ -33,7 +34,10 @@ const app = new Hono()
   .route("/categories", categories)
   .route("/sales", sales)
   .route("/devices", devices)
-  .route("/reports", reports);
+  .route("/reports", reports)
+  .route("/billing", billing)
+  // Webhook handler (no auth required - Paynow calls this directly)
+  .route("/", billingWebhook);
 
 export type AppType = typeof app;
 export default app;

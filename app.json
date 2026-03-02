@@ -1,3 +1,12 @@
 {
-  "expo": {}
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "c68ec085-d12c-4ac8-acd6-7b025900cd91"
+      }
+    },
+    "android": {
+      "package": "com.christusveritastechnologies.easypos"
+    }
+  }
 }

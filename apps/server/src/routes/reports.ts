@@ -82,7 +82,7 @@ const reports = new Hono<Env>()
   })
 
   // ── Branch comparison ─────────────────────────────────────────
-  .get("/branches", requireRole("OWNER"), async (c) => {
+  .get("/branches", requireRole("ADMIN"), async (c) => {
     const orgId = c.get("orgId");
 
     const dateParam = c.req.query("date");

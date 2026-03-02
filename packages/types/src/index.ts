@@ -11,6 +11,21 @@ export type PaymentMethod = z.infer<typeof paymentMethodSchema>;
 export const saleStatusSchema = z.enum(["COMPLETED", "VOIDED", "REFUNDED"]);
 export type SaleStatus = z.infer<typeof saleStatusSchema>;
 
+export const planSchema = z.enum(["starter", "growth", "enterprise"]);
+export type Plan = z.infer<typeof planSchema>;
+
+// ── Plan Limits & Billing Constants ────────────────────────────────
+
+export const PLAN_LIMITS = {
+  starter: { users: 5, monthlyInvoices: 1000, products: 300, categories: 50, branches: 1, price: 49 },
+  growth: { users: 12, monthlyInvoices: 2500, products: 700, categories: 150, branches: 3, price: 99 },
+  enterprise: { users: 20, monthlyInvoices: 10000, products: 1850, categories: 500, branches: 10, price: 249 },
+} as const;
+
+export type PlanLimits = (typeof PLAN_LIMITS)[Plan];
+
+export const OVERAGE_RATE = 0.02; // USD per overage unit
+
 // ── Entity Schemas ─────────────────────────────────────────────────
 
 export const organizationSchema = z.object({
@@ -20,6 +35,19 @@ export const organizationSchema = z.object({
   currency: z.string(),
   receiptHeader: z.string().nullable(),
   receiptFooter: z.string().nullable(),
+  plan: planSchema,
+  maxUsers: z.number(),
+  maxMonthlyInvoices: z.number(),
+  maxProducts: z.number(),
+  maxCategories: z.number(),
+  maxBranches: z.number(),
+  currentMonthInvoices: z.number(),
+  currentMonthOverageInvoices: z.number(),
+  currentMonthOverageProducts: z.number(),
+  currentMonthOverageCategories: z.number(),
+  pendingOverageCharges: z.number(),
+  billingCycleStart: z.coerce.date(),
+  nextBillingDate: z.coerce.date(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 });
@@ -121,7 +149,12 @@ export type Device = z.infer<typeof deviceSchema>;
 // ── Auth User (with org + branch embedded) ─────────────────────────
 
 export const authUserSchema = userSchema.extend({
-  org: organizationSchema.pick({ id: true, name: true, slug: true, currency: true }),
+  org: organizationSchema.pick({
+    id: true, name: true, slug: true, currency: true,
+    plan: true, maxUsers: true, maxMonthlyInvoices: true, maxProducts: true,
+    maxCategories: true, maxBranches: true, currentMonthInvoices: true,
+    pendingOverageCharges: true, billingCycleStart: true, nextBillingDate: true,
+  }),
   branch: branchSchema.pick({ id: true, name: true }).nullable(),
 });
 export type AuthUser = z.infer<typeof authUserSchema>;
@@ -299,3 +332,47 @@ export const dailySummarySchema = z.object({
   ),
 });
 export type DailySummary = z.infer<typeof dailySummarySchema>;
+
+// ── Billing / Subscription Types ───────────────────────────────────
+
+export const intermediatePaymentSchema = z.object({
+  id: z.string(),
+  planName: z.string(),
+  amount: z.number(),
+  currency: z.string(),
+  pollUrl: z.string().nullable(),
+  paid: z.boolean(),
+  failureReason: z.string().nullable(),
+  userId: z.string(),
+  orgId: z.string(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+});
+export type IntermediatePayment = z.infer<typeof intermediatePaymentSchema>;
+
+export const createIntermediatePaymentRequestSchema = z.object({
+  plan: planSchema,
+});
+export type CreateIntermediatePaymentRequest = z.infer<typeof createIntermediatePaymentRequestSchema>;
+
+export const billingUsageSchema = z.object({
+  plan: planSchema,
+  limits: z.object({
+    users: z.number(),
+    monthlyInvoices: z.number(),
+    products: z.number(),
+    categories: z.number(),
+    branches: z.number(),
+  }),
+  usage: z.object({
+    users: z.number(),
+    monthlyInvoices: z.number(),
+    products: z.number(),
+    categories: z.number(),
+    branches: z.number(),
+  }),
+  pendingOverageCharges: z.number(),
+  nextBillingDate: z.coerce.date(),
+  billingCycleStart: z.coerce.date(),
+});
+export type BillingUsage = z.infer<typeof billingUsageSchema>;

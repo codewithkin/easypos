@@ -10,6 +10,7 @@ import { zBody, zQuery } from "../lib/validate.js";
 import type { Env } from "../lib/context.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { requireRole } from "../middleware/rbac.js";
+import { checkProductLimit, recordProductOverage } from "../lib/plan-limits.js";
 
 const products = new Hono<Env>()
   .use(authMiddleware)
@@ -61,6 +62,12 @@ const products = new Hono<Env>()
     const orgId = c.get("orgId");
     const data = c.req.valid("json");
 
+    // ── Plan enforcement: product limit ───────────────────────────
+    const productCheck = await checkProductLimit(orgId);
+    if (!productCheck.allowed) {
+      return c.json({ error: productCheck.reason }, 403);
+    }
+
     const existingSku = await db.product.findFirst({
       where: { sku: data.sku, orgId },
     });
@@ -70,6 +77,9 @@ const products = new Hono<Env>()
       data: { ...data, orgId },
       include: { category: { select: { id: true, name: true } } },
     });
+
+    // Track product overage if applicable
+    if (productCheck.overage) await recordProductOverage(orgId);
 
     return c.json(product, 201);
   })
@@ -98,7 +108,7 @@ const products = new Hono<Env>()
   })
 
   // ── Delete product ────────────────────────────────────────────
-  .delete("/:id", requireRole("OWNER"), async (c) => {
+  .delete("/:id", requireRole("ADMIN"), async (c) => {
     const orgId = c.get("orgId");
     const id = c.req.param("id");
 

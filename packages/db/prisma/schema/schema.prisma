@@ -29,6 +29,12 @@ enum SaleStatus {
   REFUNDED
 }
 
+enum Plan {
+  starter
+  growth
+  enterprise
+}
+
 // ── Organization (Tenant) ──────────────────────────────────────────
 
 model Organization {
@@ -38,15 +44,32 @@ model Organization {
   currency      String   @default("UGX")
   receiptHeader String?
   receiptFooter String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
 
-  branches   Branch[]
-  users      User[]
-  categories Category[]
-  products   Product[]
-  sales      Sale[]
-  auditLogs  AuditLog[]
+  // ── Subscription & Billing ─────────────────────────────────────
+  plan                        Plan     @default(starter)
+  maxUsers                    Int      @default(5)
+  maxMonthlyInvoices          Int      @default(1000)
+  maxProducts                 Int      @default(300)
+  maxCategories               Int      @default(50)
+  maxBranches                 Int      @default(1)
+  currentMonthInvoices        Int      @default(0)
+  currentMonthOverageInvoices Int      @default(0)
+  currentMonthOverageProducts Int      @default(0)
+  currentMonthOverageCategories Int    @default(0)
+  pendingOverageCharges       Float    @default(0)
+  billingCycleStart           DateTime @default(now())
+  nextBillingDate             DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branches             Branch[]
+  users                User[]
+  categories           Category[]
+  products             Product[]
+  sales                Sale[]
+  auditLogs            AuditLog[]
+  intermediatePayments IntermediatePayment[]
 }
 
 // ── Branch / Location ──────────────────────────────────────────────
@@ -90,6 +113,7 @@ model User {
   refreshTokens  RefreshToken[]
   passwordResets PasswordReset[]
   auditLogs      AuditLog[]
+  intermediatePayments IntermediatePayment[]
 
   @@index([orgId])
   @@index([branchId])
@@ -257,4 +281,26 @@ model AuditLog {
   @@index([orgId])
   @@index([userId])
   @@index([createdAt])
+}
+
+// ── Billing / Payments ─────────────────────────────────────────────
+
+model IntermediatePayment {
+  id            String   @id @default(cuid())
+  planName      String   // e.g. "starter", "growth", "enterprise"
+  amount        Float
+  currency      String   @default("USD")
+  pollUrl       String?
+  paid          Boolean  @default(false)
+  failureReason String?
+  userId        String
+  orgId         String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User         @relation(fields: [userId], references: [id])
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([userId])
 }
