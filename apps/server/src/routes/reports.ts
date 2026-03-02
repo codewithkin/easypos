@@ -33,7 +33,7 @@ const reports = new Hono<Env>()
       include: { items: true },
     });
 
-    const totalRevenue = sales.reduce((sum, s) => sum + s.total, 0);
+    const totalRevenue = sales.reduce((sum: number, s: typeof sales[0]) => sum + s.total, 0);
     const totalTransactions = sales.length;
     const averageTicket = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
@@ -94,7 +94,7 @@ const reports = new Hono<Env>()
     });
 
     const results = await Promise.all(
-      branches.map(async (branch) => {
+      branches.map(async (branch: typeof branches[0]) => {
         const sales = await db.sale.findMany({
           where: {
             branchId: branch.id,
@@ -103,7 +103,7 @@ const reports = new Hono<Env>()
           },
         });
 
-        const totalRevenue = sales.reduce((sum, s) => sum + s.total, 0);
+        const totalRevenue = sales.reduce((sum: number, s: typeof sales[0]) => sum + s.total, 0);
 
         return {
           branchId: branch.id,

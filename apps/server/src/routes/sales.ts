@@ -48,7 +48,7 @@ const sales = new Hono<Env>()
       return c.json({ error: "One or more products not found or inactive" }, 400);
     }
 
-    const productMap = new Map(products.map((p) => [p.id, p]));
+    const productMap = new Map(products.map((p: typeof products[0]) => [p.id, p]));
 
     const saleItems = items.map((item) => {
       const product = productMap.get(item.productId)!;
@@ -62,7 +62,7 @@ const sales = new Hono<Env>()
       };
     });
 
-    const subtotal = saleItems.reduce((sum, item) => sum + item.total, 0);
+    const subtotal = saleItems.reduce((sum: number, item: typeof saleItems[0]) => sum + item.total, 0);
     const discountAmount = discount ?? 0;
     const taxAmount = tax ?? 0;
     const total = subtotal - discountAmount + taxAmount;

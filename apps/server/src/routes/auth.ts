@@ -91,7 +91,7 @@ const auth = new Hono<Env>()
       });
 
       return { org, user, branch };
-    });
+    }) as any;
 
     const accessToken = await signAccessToken({
       userId: result.user.id,

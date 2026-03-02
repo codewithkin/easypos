@@ -35,7 +35,7 @@ export async function signRefreshToken(userId: string): Promise<string> {
 }
 
 export async function verifyAccessToken(token: string): Promise<AccessTokenPayload> {
-  const payload = await verify(token, env.JWT_SECRET);
+  const payload = await verify(token, env.JWT_SECRET, "HS256");
   return {
     userId: payload.userId as string,
     orgId: payload.orgId as string,
@@ -45,7 +45,7 @@ export async function verifyAccessToken(token: string): Promise<AccessTokenPaylo
 }
 
 export async function verifyRefreshToken(token: string): Promise<{ userId: string }> {
-  const payload = await verify(token, env.JWT_REFRESH_SECRET);
+  const payload = await verify(token, env.JWT_REFRESH_SECRET, "HS256");
   return { userId: payload.userId as string };
 }
 

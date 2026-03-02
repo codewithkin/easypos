@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import type { SendMailOptions } from "nodemailer";
 import { env } from "@easypos/env/server";
 
 // ── Transporter ────────────────────────────────────────────────────
@@ -9,6 +10,41 @@ const transporter = nodemailer.createTransport({
   secure: env.SMTP_PORT === 465,
   auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
 });
+
+// ── Generic sendEmail function ─────────────────────────────────────
+
+export async function sendEmail(opts: {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+  from?: string;
+  replyTo?: string;
+  cc?: string | string[];
+  bcc?: string | string[];
+  attachments?: SendMailOptions["attachments"];
+}) {
+  const mailOptions: SendMailOptions = {
+    from: opts.from || env.SMTP_FROM,
+    to: opts.to,
+    subject: opts.subject,
+    html: opts.html,
+    text: opts.text,
+    replyTo: opts.replyTo,
+    cc: opts.cc,
+    bcc: opts.bcc,
+    attachments: opts.attachments,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Email sent: ${info.messageId}`);
+    return info;
+  } catch (error) {
+    console.error("Failed to send email:", error);
+    throw error;
+  }
+}
 
 // ── Base template ──────────────────────────────────────────────────
 

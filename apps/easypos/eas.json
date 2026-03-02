@@ -10,21 +10,24 @@
       "env": {
         "EXPO_USE_FAST_RESOLVER": "true"
       },
-      "node": "20.11.0"
+      "node": "20.11.0",
+      "resourceClass": "default"
     },
     "preview": {
       "distribution": "internal",
       "env": {
         "EXPO_USE_FAST_RESOLVER": "true"
       },
-      "node": "20.11.0"
+      "node": "20.11.0",
+      "resourceClass": "default"
     },
     "production": {
       "autoIncrement": true,
       "env": {
         "EXPO_USE_FAST_RESOLVER": "true"
       },
-      "node": "20.11.0"
+      "node": "20.11.0",
+      "resourceClass": "default"
     }
   },
   "submit": {
