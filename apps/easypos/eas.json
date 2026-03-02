@@ -10,7 +10,7 @@
       "env": {
         "EXPO_USE_FAST_RESOLVER": "true"
       },
-      "node": "20.11.0",
+      "node": "20.19.0",
       "resourceClass": "default"
     },
     "preview": {
@@ -18,7 +18,7 @@
       "env": {
         "EXPO_USE_FAST_RESOLVER": "true"
       },
-      "node": "20.11.0",
+      "node": "20.19.0",
       "resourceClass": "default"
     },
     "production": {
@@ -26,7 +26,7 @@
       "env": {
         "EXPO_USE_FAST_RESOLVER": "true"
       },
-      "node": "20.11.0",
+      "node": "20.19.0",
       "resourceClass": "default"
     }
   },
