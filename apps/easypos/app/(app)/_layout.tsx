@@ -13,3 +13,7 @@ export default function AppLayout() {
             <Stack.Screen name="team/invite" />
             <Stack.Screen name="billing/plans" />
             <Stack.Screen name="billing/usage" />
+            <Stack.Screen name="settings" />
+        </Stack>
+    );
+}
