@@ -42,6 +42,7 @@ model Organization {
   name          String
   slug          String   @unique
   currency      String   @default("UGX")
+  logoUrl       String?
   receiptHeader String?
   receiptFooter String?
 

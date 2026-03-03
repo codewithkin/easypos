@@ -19,6 +19,12 @@ export const env = createEnv({
     PAYNOW_INTEGRATION_KEY: z.string().min(1),
     PAYNOW_RESULT_URL: z.string().url(),
     PAYNOW_RETURN_URL: z.string().url(),
+    // Cloudflare R2 (S3-compatible)
+    R2_ACCOUNT_ID: z.string().min(1),
+    R2_ACCESS_KEY_ID: z.string().min(1),
+    R2_SECRET_ACCESS_KEY: z.string().min(1),
+    R2_BUCKET_NAME: z.string().min(1),
+    R2_PUBLIC_URL: z.string().url(),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

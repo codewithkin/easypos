@@ -12,7 +12,7 @@ interface AuthState {
   // Actions
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: { orgName: string; email: string; password: string; name: string }) => Promise<void>;
+  register: (data: { orgName: string; email: string; password: string; name: string; logoUrl?: string }) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: AuthUser) => void;
 }

@@ -32,6 +32,7 @@ function userToResponse(user: any, org: any, branch: any) {
       name: org.name,
       slug: org.slug,
       currency: org.currency,
+      logoUrl: org.logoUrl ?? null,
       plan: org.plan,
       maxUsers: org.maxUsers,
       maxMonthlyInvoices: org.maxMonthlyInvoices,
@@ -51,7 +52,7 @@ const auth = new Hono<Env>()
 
   // ── Register (create org + owner) ──────────────────────────────
   .post("/register", zBody(registerRequestSchema), async (c) => {
-    const { orgName, email, password, name } = c.req.valid("json");
+    const { orgName, email, password, name, logoUrl } = c.req.valid("json");
 
     const existingUser = await db.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -71,6 +72,7 @@ const auth = new Hono<Env>()
         data: {
           name: orgName,
           slug: `${slug}-${Date.now().toString(36)}`,
+          logoUrl: logoUrl ?? null,
           plan: "starter",
           maxUsers: starterLimits.users,
           maxMonthlyInvoices: starterLimits.monthlyInvoices,

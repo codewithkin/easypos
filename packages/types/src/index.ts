@@ -33,6 +33,7 @@ export const organizationSchema = z.object({
   name: z.string(),
   slug: z.string(),
   currency: z.string(),
+  logoUrl: z.string().nullable(),
   receiptHeader: z.string().nullable(),
   receiptFooter: z.string().nullable(),
   plan: planSchema,
@@ -150,7 +151,7 @@ export type Device = z.infer<typeof deviceSchema>;
 
 export const authUserSchema = userSchema.extend({
   org: organizationSchema.pick({
-    id: true, name: true, slug: true, currency: true,
+    id: true, name: true, slug: true, currency: true, logoUrl: true,
     plan: true, maxUsers: true, maxMonthlyInvoices: true, maxProducts: true,
     maxCategories: true, maxBranches: true, currentMonthInvoices: true,
     pendingOverageCharges: true, billingCycleStart: true, nextBillingDate: true,
@@ -172,6 +173,7 @@ export const registerRequestSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(2),
+  logoUrl: z.string().url().optional(),
 });
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 
