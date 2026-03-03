@@ -9,6 +9,7 @@ import { PortalHost } from "@rn-primitives/portal";
 
 import { NAV_THEME } from "@/lib/theme";
 import { queryClient } from "@/lib/query-client";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function RootLayout() {
   return (
@@ -26,6 +27,7 @@ export default function RootLayout() {
               <Stack.Screen name="payments/failure" />
             </Stack>
             <PortalHost />
+            <Toaster />
           </ThemeProvider>
         </QueryClientProvider>
       </KeyboardProvider>
