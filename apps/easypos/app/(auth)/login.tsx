@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, KeyboardAvoidingView, Platform, Alert } from "react-native";
+import { View, KeyboardAvoidingView, Platform } from "react-native";
 import { Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
 import { ApiError } from "@/lib/api";
+import { toast } from "@/lib/toast";
+import * as Haptics from "expo-haptics";
 
 export default function LoginScreen() {
     const insets = useSafeAreaInsets();
@@ -19,15 +21,16 @@ export default function LoginScreen() {
 
     async function handleLogin() {
         if (!email.trim() || !password.trim()) {
-            Alert.alert("Missing Fields", "Please enter both email and password.");
+            toast.error("Please enter both email and password.");
             return;
         }
 
         try {
             await login(email.trim(), password);
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (err) {
             const message = err instanceof ApiError ? err.message : "Something went wrong";
-            Alert.alert("Login Failed", message);
+            toast.error(message);
         }
     }
 

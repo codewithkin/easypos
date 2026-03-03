@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { View, Pressable, Alert, ScrollView } from "react-native";
+import { View, Pressable, ScrollView } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { useAuthStore } from "@/store/auth";
 import { useApiPost } from "@/hooks/use-api";
 import { useRole } from "@/hooks/use-role";
 import { formatCurrency, PAYMENT_METHOD_LABELS } from "@easypos/utils";
+import { toast } from "@/lib/toast";
 import type { Sale, PaymentMethod } from "@easypos/types";
 import { cn } from "@/lib/utils";
 
@@ -44,11 +46,12 @@ export default function CheckoutScreen() {
         path: "/sales",
         invalidateKeys: [["sales"], ["reports"]],
         onSuccess: (data) => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             router.dismiss();
             router.push(`/(app)/sale/${data.id}`);
         },
         onError: (error) => {
-            Alert.alert("Sale Failed", error.message);
+            toast.error("Sale Failed", error.message);
         },
     });
 

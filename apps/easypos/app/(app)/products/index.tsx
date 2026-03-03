@@ -4,7 +4,6 @@ import {
     FlatList,
     Pressable,
     TextInput,
-    Alert,
     RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
@@ -15,8 +14,10 @@ import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useAuthStore } from "@/store/auth";
 import { useApiQuery, useApiDelete } from "@/hooks/use-api";
+import { toast } from "@/lib/toast";
 import { formatCurrency } from "@easypos/utils";
 import type { Product, Category } from "@easypos/types";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ export default function ManageProductsScreen() {
     const user = useAuthStore((s) => s.user);
     const [search, setSearch] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<ProductWithCategory | null>(null);
 
     const { data: productsData, isLoading, refetch, isRefetching } = useApiQuery<{
         items: ProductWithCategory[];
@@ -42,9 +44,11 @@ export default function ManageProductsScreen() {
         path: "/categories",
     });
 
-    const { mutate: deleteProduct } = useApiDelete<{ message: string }>({
+    const { mutate: deleteProduct, isPending: isDeleting } = useApiDelete<{ message: string }>({
         path: "",
         invalidateKeys: [["products"]],
+        onSuccess: () => toast.success("Product deleted"),
+        onError: (err) => toast.error(err.message),
     });
 
     const products = productsData?.items ?? [];
@@ -66,25 +70,7 @@ export default function ManageProductsScreen() {
     }, [products, search, selectedCategory]);
 
     function confirmDelete(product: ProductWithCategory) {
-        Alert.alert(
-            "Delete Product",
-            `Remove "${product.name}" from the catalogue? This cannot be undone.`,
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: () =>
-                        deleteProduct(undefined, {
-                            // Override path at call-time is not supported in useApiDelete;
-                            // so we navigate to edit and soft-delete there instead.
-                            // Use the api directly:
-                        }),
-                },
-            ],
-        );
-        // Navigate to edit screen where soft-delete (isActive=false) is handled
-        router.push(`/(app)/products/${product.id}?confirmDelete=true`);
+        setDeleteTarget(product);
     }
 
     function renderProduct({ item }: { item: ProductWithCategory }) {
@@ -232,6 +218,22 @@ export default function ManageProductsScreen() {
                     contentContainerStyle={{ paddingBottom: 40 }}
                 />
             )}
+
+            <ConfirmDialog
+                open={deleteTarget !== null}
+                onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+                title="Delete Product"
+                description={`Remove "${deleteTarget?.name}" from the catalogue? This cannot be undone.`}
+                confirmText="Delete"
+                destructive
+                isLoading={isDeleting}
+                onConfirm={() => {
+                    if (deleteTarget) {
+                        deleteProduct(undefined);
+                        setDeleteTarget(null);
+                    }
+                }}
+            />
         </View>
     );
 }

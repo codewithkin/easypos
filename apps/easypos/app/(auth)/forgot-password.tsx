@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, KeyboardAvoidingView, Platform, Alert } from "react-native";
+import { View, KeyboardAvoidingView, Platform } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
+import { toast } from "@/lib/toast";
 
 type Step = "email" | "code" | "done";
 
@@ -21,7 +22,7 @@ export default function ForgotPasswordScreen() {
 
     async function handleRequestReset() {
         if (!email.trim()) {
-            Alert.alert("Missing Email", "Please enter your email address.");
+            toast.error("Please enter your email address.");
             return;
         }
 
@@ -29,10 +30,10 @@ export default function ForgotPasswordScreen() {
         try {
             await api.post("/auth/forgot-password", { email: email.trim() });
             setStep("code");
-            Alert.alert("Code Sent", "If the email exists, a reset code has been sent.");
+            toast.success("If the email exists, a reset code has been sent.");
         } catch (err) {
             const message = err instanceof ApiError ? err.message : "Something went wrong";
-            Alert.alert("Error", message);
+            toast.error(message);
         } finally {
             setIsLoading(false);
         }
@@ -40,12 +41,12 @@ export default function ForgotPasswordScreen() {
 
     async function handleResetPassword() {
         if (!code.trim() || !newPassword.trim()) {
-            Alert.alert("Missing Fields", "Please enter the code and a new password.");
+            toast.error("Please enter the code and a new password.");
             return;
         }
 
         if (newPassword.length < 6) {
-            Alert.alert("Weak Password", "Password must be at least 6 characters.");
+            toast.error("Password must be at least 6 characters.");
             return;
         }
 
@@ -57,12 +58,11 @@ export default function ForgotPasswordScreen() {
                 newPassword,
             });
             setStep("done");
-            Alert.alert("Success", "Your password has been reset.", [
-                { text: "Sign In", onPress: () => router.replace("/(auth)/login") },
-            ]);
+            toast.success("Password reset! You can now sign in.");
+            router.replace("/(auth)/login");
         } catch (err) {
             const message = err instanceof ApiError ? err.message : "Something went wrong";
-            Alert.alert("Error", message);
+            toast.error(message);
         } finally {
             setIsLoading(false);
         }

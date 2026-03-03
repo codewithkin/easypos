@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { View, ScrollView, Pressable, Alert } from "react-native";
+import { View, ScrollView, Pressable } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,12 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useApiQuery, useApiPut } from "@/hooks/use-api";
 import { useRole } from "@/hooks/use-role";
 import { useAuthStore } from "@/store/auth";
 import { formatCurrency } from "@easypos/utils";
 import type { Product, Category } from "@easypos/types";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 
 type ProductWithCategory = Product & { category?: { id: string; name: string } | null };
 
@@ -43,6 +45,7 @@ export default function EditProductScreen() {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [isActive, setIsActive] = useState(true);
     const [populated, setPopulated] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     useEffect(() => {
         if (product && !populated) {
@@ -55,20 +58,9 @@ export default function EditProductScreen() {
             setIsActive(product.isActive);
             setPopulated(true);
 
-            // If coming from confirmDelete flow, trigger delete immediately
+            // If coming from confirmDelete flow, trigger delete dialog
             if (confirmDelete === "true") {
-                Alert.alert(
-                    "Delete Product",
-                    `Remove "${product.name}" from the catalogue?`,
-                    [
-                        { text: "Cancel", style: "cancel", onPress: () => router.back() },
-                        {
-                            text: "Delete",
-                            style: "destructive",
-                            onPress: () => handleToggleActive(false),
-                        },
-                    ],
-                );
+                setShowDeleteDialog(true);
             }
         }
     }, [product]);
@@ -76,8 +68,8 @@ export default function EditProductScreen() {
     const { mutate: updateProduct, isPending } = useApiPut<unknown, unknown>({
         path: `/products/${id}`,
         invalidateKeys: [["products"], ["product", id]],
-        onSuccess: () => router.back(),
-        onError: (err) => Alert.alert("Error", err.message),
+        onSuccess: () => { toast.success("Product updated"); router.back(); },
+        onError: (err) => toast.error(err.message),
     });
 
     function handleToggleActive(active: boolean) {
@@ -86,12 +78,12 @@ export default function EditProductScreen() {
 
     function handleSubmit() {
         if (!name.trim() || !sku.trim()) {
-            Alert.alert("Validation", "Name and SKU are required.");
+            toast.error("Name and SKU are required.");
             return;
         }
         const parsedPrice = parseFloat(price);
         if (isNaN(parsedPrice) || parsedPrice <= 0) {
-            Alert.alert("Validation", "Enter a valid selling price.");
+            toast.error("Enter a valid selling price.");
             return;
         }
 
@@ -266,6 +258,17 @@ export default function EditProductScreen() {
                     </View>
                 </>
             )}
+            {/* Delete confirmation (from confirmDelete query param) */}
+            <ConfirmDialog
+                open={showDeleteDialog}
+                onOpenChange={setShowDeleteDialog}
+                title="Delete Product"
+                description={`Remove "${product?.name ?? "this product"}" from the catalogue? This cannot be undone.`}
+                confirmText="Delete"
+                destructive
+                isLoading={isPending}
+                onConfirm={() => handleToggleActive(false)}
+            />
         </View>
     );
 }

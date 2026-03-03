@@ -1,4 +1,5 @@
-import { View, FlatList, Pressable, Alert, RefreshControl } from "react-native";
+import { useState } from "react";
+import { View, FlatList, Pressable, RefreshControl } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -7,9 +8,11 @@ import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useAuthStore } from "@/store/auth";
 import { useRole } from "@/hooks/use-role";
 import { useApiQuery, useApiPut } from "@/hooks/use-api";
+import { toast } from "@/lib/toast";
 import { ROLE_LABELS } from "@easypos/utils";
 import type { User } from "@easypos/types";
 import { cn } from "@/lib/utils";
@@ -26,35 +29,28 @@ export default function ManageTeamScreen() {
     const insets = useSafeAreaInsets();
     const user = useAuthStore((s) => s.user);
     const { isAdmin, canManage } = useRole();
+    const [toggleTarget, setToggleTarget] = useState<TeamMember | null>(null);
 
     const { data, isLoading, refetch, isRefetching } = useApiQuery<{ items: TeamMember[] }>({
         queryKey: ["team"],
         path: "/users",
     });
 
-    const { mutate: updateUser } = useApiPut<unknown, { isActive: boolean }>({
+    const { mutate: updateUser, isPending: isUpdating } = useApiPut<unknown, { isActive: boolean }>({
         path: "",
         invalidateKeys: [["team"]],
-        onError: (err) => Alert.alert("Error", err.message),
+        onSuccess: () => {
+            const action = toggleTarget?.isActive ? "deactivated" : "reactivated";
+            toast.success(`Account ${action}`);
+            setToggleTarget(null);
+        },
+        onError: (err) => toast.error(err.message),
     });
 
     const members = data?.items ?? [];
 
     function handleToggleActive(member: TeamMember) {
-        const action = member.isActive ? "deactivate" : "reactivate";
-        Alert.alert(
-            member.isActive ? "Deactivate Account" : "Reactivate Account",
-            `${action.charAt(0).toUpperCase() + action.slice(1)} ${member.name}?`,
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: member.isActive ? "Deactivate" : "Reactivate",
-                    style: member.isActive ? "destructive" : "default",
-                    onPress: () =>
-                        updateUser({ isActive: !member.isActive }),
-                },
-            ],
-        );
+        setToggleTarget(member);
     }
 
     // Group by role
@@ -186,6 +182,19 @@ export default function ManageTeamScreen() {
                     )}
                 />
             )}
+
+            <ConfirmDialog
+                open={toggleTarget !== null}
+                onOpenChange={(open) => { if (!open) setToggleTarget(null); }}
+                title={toggleTarget?.isActive ? "Deactivate Account" : "Reactivate Account"}
+                description={`${toggleTarget?.isActive ? "Deactivate" : "Reactivate"} ${toggleTarget?.name}? They will ${toggleTarget?.isActive ? "lose" : "regain"} access to EasyPOS.`}
+                confirmText={toggleTarget?.isActive ? "Deactivate" : "Reactivate"}
+                destructive={toggleTarget?.isActive}
+                isLoading={isUpdating}
+                onConfirm={() => {
+                    if (toggleTarget) updateUser({ isActive: !toggleTarget.isActive });
+                }}
+            />
         </View>
     );
 }

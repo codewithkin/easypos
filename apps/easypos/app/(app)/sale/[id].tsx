@@ -1,4 +1,5 @@
-import { View, ScrollView, Alert, Pressable } from "react-native";
+import { useState } from "react";
+import { View, ScrollView, Pressable } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -8,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useAuthStore } from "@/store/auth";
 import { useApiQuery, useApiPost } from "@/hooks/use-api";
+import { toast } from "@/lib/toast";
 import {
     formatCurrency,
     formatDateTime,
@@ -30,6 +33,7 @@ export default function SaleDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const insets = useSafeAreaInsets();
     const user = useAuthStore((s) => s.user);
+    const [showVoidDialog, setShowVoidDialog] = useState(false);
 
     const { data: sale, isLoading } = useApiQuery<SaleDetail>({
         queryKey: ["sale", id],
@@ -43,27 +47,20 @@ export default function SaleDetailScreen() {
         path: `/sales/${id}/void`,
         invalidateKeys: [["sales"], ["sale", id], ["reports"]],
         onSuccess: () => {
-            Alert.alert("Voided", "Sale has been voided.");
+            toast.success("Sale voided");
         },
-        onError: (err) => Alert.alert("Error", err.message),
+        onError: (err) => toast.error(err.message),
     });
 
     const { mutate: printReceipt } = useApiPost<unknown, Record<string, never>>({
         path: `/sales/${id}/print`,
-        onError: (err) => Alert.alert("Error", err.message),
+        onError: (err) => toast.error(err.message),
     });
 
     const canVoid =
         sale?.status === "COMPLETED" && (user?.role === "ADMIN" || user?.role === "MANAGER");
     function handleVoid() {
-        Alert.alert("Void Sale", "This action cannot be undone. Continue?", [
-            { text: "Cancel", style: "cancel" },
-            {
-                text: "Void",
-                style: "destructive",
-                onPress: () => voidSale({ reason: "Voided by " + user?.name }),
-            },
-        ]);
+        setShowVoidDialog(true);
     }
 
     function handleNewSale() {
@@ -248,6 +245,17 @@ export default function SaleDetailScreen() {
                     <Text className="text-primary-foreground font-bold">New Sale</Text>
                 </Button>
             </View>
+
+            <ConfirmDialog
+                open={showVoidDialog}
+                onOpenChange={setShowVoidDialog}
+                title="Void Sale"
+                description="This action cannot be undone. The sale will be marked as voided."
+                confirmText="Void Sale"
+                destructive
+                isLoading={voiding}
+                onConfirm={() => voidSale({ reason: "Voided by " + user?.name })}
+            />
         </View>
     );
 }

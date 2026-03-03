@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, KeyboardAvoidingView, Platform, Alert, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { View, KeyboardAvoidingView, Platform, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { Image } from "react-native";
 import { Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
 import { ApiError } from "@/lib/api";
+import { toast } from "@/lib/toast";
+import * as Haptics from "expo-haptics";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
@@ -21,7 +23,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 async function pickAndCropLogo(): Promise<ImageManipulator.ImageResult | null> {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-        Alert.alert("Permission required", "Allow photo library access to upload a logo.");
+        toast.error("Allow photo library access to upload a logo.");
         return null;
     }
 
@@ -107,7 +109,7 @@ export default function RegisterScreen() {
             const url = await uploadLogoToR2(image.uri);
             setLogoUrl(url);
         } catch {
-            Alert.alert("Upload Failed", "Could not upload logo. You can still continue without one.");
+            toast.error("Could not upload logo. You can still continue without one.");
             setLogoUri(null);
             setLogoUrl(null);
         } finally {
@@ -117,17 +119,17 @@ export default function RegisterScreen() {
 
     async function handleRegister() {
         if (!orgName.trim() || !name.trim() || !email.trim() || !password.trim()) {
-            Alert.alert("Missing Fields", "Please fill in all fields.");
+            toast.error("Please fill in all fields.");
             return;
         }
 
         if (password.length < 6) {
-            Alert.alert("Weak Password", "Password must be at least 6 characters.");
+            toast.error("Password must be at least 6 characters.");
             return;
         }
 
         if (logoUri && logoUploading) {
-            Alert.alert("Please wait", "Logo is still uploading…");
+            toast.info("Logo is still uploading\u2026");
             return;
         }
 
@@ -139,9 +141,10 @@ export default function RegisterScreen() {
                 password,
                 ...(logoUrl ? { logoUrl } : {}),
             });
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (err) {
             const message = err instanceof ApiError ? err.message : "Something went wrong";
-            Alert.alert("Registration Failed", message);
+            toast.error(message);
         }
     }
 

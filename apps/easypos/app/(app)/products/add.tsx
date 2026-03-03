@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, ScrollView, Pressable, Alert } from "react-native";
+import { View, ScrollView, Pressable } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useApiQuery, useApiPost } from "@/hooks/use-api";
+import { toast } from "@/lib/toast";
 import type { Category } from "@easypos/types";
 import { cn } from "@/lib/utils";
 
@@ -42,9 +43,10 @@ export default function AddProductScreen() {
         path: "/products",
         invalidateKeys: [["products"]],
         onSuccess: () => {
+            toast.success("Product saved");
             router.back();
         },
-        onError: (err) => Alert.alert("Error", err.message),
+        onError: (err) => toast.error(err.message),
     });
 
     function set(key: keyof Field) {
@@ -53,16 +55,16 @@ export default function AddProductScreen() {
 
     function handleSubmit() {
         if (!fields.name.trim()) {
-            Alert.alert("Validation", "Product name is required.");
+            toast.error("Product name is required.");
             return;
         }
         if (!fields.sku.trim()) {
-            Alert.alert("Validation", "SKU is required.");
+            toast.error("SKU is required.");
             return;
         }
         const price = parseFloat(fields.price);
         if (!fields.price || isNaN(price) || price <= 0) {
-            Alert.alert("Validation", "Enter a valid selling price.");
+            toast.error("Enter a valid selling price.");
             return;
         }
 

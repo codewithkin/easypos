@@ -3,7 +3,6 @@ import {
     View,
     ScrollView,
     Pressable,
-    Alert,
     KeyboardAvoidingView,
     Platform,
 } from "react-native";
@@ -17,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRole } from "@/hooks/use-role";
 import { useApiQuery, useApiPost } from "@/hooks/use-api";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { Branch } from "@easypos/types";
 
@@ -63,14 +63,11 @@ export default function InviteTeamMemberScreen() {
         path: "/users/invite",
         invalidateKeys: [["team"]],
         onSuccess: () => {
-            Alert.alert(
-                "Invitation Sent",
-                `${name} has been invited! They'll receive an email with their temporary credentials.`,
-                [{ text: "OK", onPress: () => router.back() }],
-            );
+            toast.success("Invitation sent", `${name} will receive their login credentials by email.`);
+            router.back();
         },
         onError: (err) => {
-            Alert.alert("Error", err.message ?? "Failed to send invitation.");
+            toast.error(err.message ?? "Failed to send invitation.");
         },
     });
 
@@ -78,10 +75,10 @@ export default function InviteTeamMemberScreen() {
         const trimmedName = name.trim();
         const trimmedEmail = email.trim().toLowerCase();
 
-        if (!trimmedName) return Alert.alert("Validation", "Name is required.");
-        if (!trimmedEmail) return Alert.alert("Validation", "Email is required.");
+        if (!trimmedName) return toast.error("Name is required.");
+        if (!trimmedEmail) return toast.error("Email is required.");
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail))
-            return Alert.alert("Validation", "Please enter a valid email address.");
+            return toast.error("Please enter a valid email address.");
 
         inviteMember({
             name: trimmedName,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Pressable, Alert, Linking } from "react-native";
+import { View, Pressable, Linking } from "react-native";
 import { router, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -10,6 +10,7 @@ import { useAuthStore } from "@/store/auth";
 import { useApiPost } from "@/hooks/use-api";
 import { PLAN_LIMITS, type Plan } from "@easypos/types";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 
 const PLAN_FEATURES: Record<Plan, string[]> = {
     starter: [
@@ -56,7 +57,7 @@ export default function PlansScreen() {
 
     async function handleSubscribe() {
         if (selectedPlan === currentPlan) {
-            Alert.alert("Current Plan", "You are already on this plan.");
+            toast.info("You are already on this plan.");
             return;
         }
 
@@ -72,7 +73,7 @@ export default function PlansScreen() {
                 // After payment, user returns via deep link → payments/success screen
             }
         } catch (err: any) {
-            Alert.alert("Error", err?.message ?? "Failed to initiate payment");
+            toast.error(err?.message ?? "Failed to initiate payment");
         } finally {
             setIsLoading(false);
         }

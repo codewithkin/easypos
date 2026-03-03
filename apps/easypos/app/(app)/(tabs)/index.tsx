@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { View, FlatList, Pressable, TextInput, Alert } from "react-native";
+import { View, FlatList, Pressable, TextInput } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,6 +13,7 @@ import { useApiQuery } from "@/hooks/use-api";
 import { formatCurrency } from "@easypos/utils";
 import type { Product, Category } from "@easypos/types";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 
 interface CartItem {
     product: Product;
@@ -87,7 +88,7 @@ export default function POSScreen() {
 
     function handleCheckout() {
         if (cart.length === 0) {
-            Alert.alert("Empty Cart", "Add products to start a sale.");
+            toast.error("Add products to start a sale.");
             return;
         }
         router.push({

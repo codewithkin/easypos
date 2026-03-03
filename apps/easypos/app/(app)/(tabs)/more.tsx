@@ -1,10 +1,12 @@
-import { View, Pressable, Alert } from "react-native";
+import { useState } from "react";
+import { View, Pressable } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { Text } from "@/components/ui/text";
 import { Separator } from "@/components/ui/separator";
 import { Container } from "@/components/Container";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useAuthStore } from "@/store/auth";
 import { useRole } from "@/hooks/use-role";
 import { ROLE_LABELS } from "@easypos/utils";
@@ -69,12 +71,10 @@ export default function MoreScreen() {
     const user = useAuthStore((s) => s.user);
     const logout = useAuthStore((s) => s.logout);
     const { isAdmin, canManage } = useRole();
+    const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
     function handleLogout() {
-        Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-            { text: "Cancel", style: "cancel" },
-            { text: "Sign Out", style: "destructive", onPress: logout },
-        ]);
+        setShowLogoutDialog(true);
     }
 
     return (
@@ -192,6 +192,16 @@ export default function MoreScreen() {
             <View className="items-center mt-8 mb-4">
                 <Text className="text-muted-foreground text-xs">EasyPOS v1.0.0</Text>
             </View>
+
+            <ConfirmDialog
+                open={showLogoutDialog}
+                onOpenChange={setShowLogoutDialog}
+                title="Sign Out"
+                description="Are you sure you want to sign out?"
+                confirmText="Sign Out"
+                destructive
+                onConfirm={logout}
+            />
         </Container>
     );
 }
