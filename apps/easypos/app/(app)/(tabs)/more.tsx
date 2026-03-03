@@ -5,7 +5,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Text } from "@/components/ui/text";
 import { Separator } from "@/components/ui/separator";
 import { Container } from "@/components/Container";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuthStore } from "@/store/auth";
 import { useRole } from "@/hooks/use-role";
 import { ROLE_LABELS } from "@easypos/utils";
@@ -179,11 +178,6 @@ export default function MoreScreen() {
                     <SettingsItem icon="print-outline" label="Printer Setup" subtitle="Bluetooth printers" />
                 </>
             )}
-
-            {/* ── Preferences — Everyone ── */}
-            <Separator className="mt-4" />
-            <SectionHeader title="Preferences" />
-            <SettingsItem icon="moon-outline" label="Dark Mode" right={<ThemeToggle />} />
 
             {/* ── Account — Everyone ── */}
             <Separator className="mt-2" />

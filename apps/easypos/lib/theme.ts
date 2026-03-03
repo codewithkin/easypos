@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, type Theme } from "@react-navigation/native";
+import { DefaultTheme, type Theme } from "@react-navigation/native";
 
 // ── Raw brand palette ──────────────────────────────────────────────
 export const BRAND = {
@@ -36,30 +36,9 @@ export const THEME = {
     input:              "hsl(203 24% 88%)",
     ring:               "hsl(149 100% 35%)",
   },
-  dark: {
-    background:         "hsl(228 17% 21%)",
-    foreground:         "hsl(0 0% 100%)",
-    card:               "hsl(228 17% 25%)",
-    cardForeground:     "hsl(0 0% 100%)",
-    popover:            "hsl(228 17% 21%)",
-    popoverForeground:  "hsl(0 0% 100%)",
-    primary:            "hsl(149 100% 40%)",
-    primaryForeground:  "hsl(0 0% 100%)",
-    secondary:          "hsl(38 80% 45%)",
-    secondaryForeground:"hsl(0 0% 100%)",
-    muted:              "hsl(228 13% 41%)",
-    mutedForeground:    "hsl(205 13% 74%)",
-    accent:             "hsl(228 13% 41%)",
-    accentForeground:   "hsl(0 0% 100%)",
-    destructive:        "hsl(0 70% 54%)",
-    warning:            "hsl(28 90% 50%)",
-    border:             "hsl(228 13% 41%)",
-    input:              "hsl(228 13% 41%)",
-    ring:               "hsl(149 100% 40%)",
-  },
 } as const;
 
-export const NAV_THEME: Record<"light" | "dark", Theme> = {
+export const NAV_THEME: Record<"light", Theme> = {
   light: {
     ...DefaultTheme,
     colors: {
@@ -69,17 +48,6 @@ export const NAV_THEME: Record<"light" | "dark", Theme> = {
       notification: THEME.light.destructive,
       primary:      THEME.light.primary,
       text:         THEME.light.foreground,
-    },
-  },
-  dark: {
-    ...DarkTheme,
-    colors: {
-      background:   THEME.dark.background,
-      border:       THEME.dark.border,
-      card:         THEME.dark.card,
-      notification: THEME.dark.destructive,
-      primary:      THEME.dark.primary,
-      text:         THEME.dark.foreground,
     },
   },
 };

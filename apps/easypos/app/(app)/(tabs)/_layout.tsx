@@ -1,11 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { useColorScheme } from "nativewind";
 import { THEME } from "@/lib/theme";
 
 export default function TabLayout() {
-    const { colorScheme } = useColorScheme();
-    const theme = colorScheme === "dark" ? THEME.dark : THEME.light;
+    const theme = THEME.light;
 
     return (
         <Tabs
