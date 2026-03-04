@@ -1,9 +1,10 @@
-import { View, FlatList, Pressable, TextInput, RefreshControl, useWindowDimensions } from "react-native";
+import { View, FlatList, Pressable, RefreshControl, useWindowDimensions, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
 
 import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
@@ -13,12 +14,24 @@ import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/store/auth";
 import { useRole } from "@/hooks/use-role";
 import { useApiPaginatedQuery } from "@/hooks/use-api";
-import { formatCurrency, formatTime, formatDate, PAYMENT_METHOD_LABELS, SALE_STATUS_LABELS } from "@easypos/utils";
-import type { Sale } from "@easypos/types";
+import { formatCurrency, formatTime, formatDate, formatDateTime, PAYMENT_METHOD_LABELS, SALE_STATUS_LABELS } from "@easypos/utils";
+import type { Sale, SaleItem } from "@easypos/types";
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/theme";
 
-type SaleWithCashier = Sale & { cashier: { id: string; name: string } };
+type SaleWithDetails = Sale & {
+    items: SaleItem[];
+    cashier: { id: string; name: string };
+};
+
+const PERIODS = [
+    { key: "today", label: "Today" },
+    { key: "7d", label: "7 Days" },
+    { key: "30d", label: "30 Days" },
+    { key: "all", label: "All" },
+] as const;
+
+type PeriodKey = (typeof PERIODS)[number]["key"];
 
 export default function SalesScreen() {
     const insets = useSafeAreaInsets();
@@ -27,7 +40,11 @@ export default function SalesScreen() {
     const isTablet = width >= 768;
     const user = useAuthStore((s) => s.user);
     const { canManage } = useRole();
-    const [search, setSearch] = useState("");
+    const [period, setPeriod] = useState<PeriodKey>("today");
+
+    // Bottom sheet for sale preview
+    const bottomSheetRef = useRef<BottomSheet>(null);
+    const [selectedSale, setSelectedSale] = useState<SaleWithDetails | null>(null);
 
     const {
         items: sales,
@@ -38,40 +55,67 @@ export default function SalesScreen() {
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
-    } = useApiPaginatedQuery<SaleWithCashier>({
-        queryKey: ["sales", "today"],
-        path: "/sales",
+    } = useApiPaginatedQuery<SaleWithDetails>({
+        queryKey: ["sales", period],
+        path: `/sales?period=${period}`,
         pageSize: 10,
     });
 
-    // Revenue = completed non-credit sales
-    const revenueSales = sales.filter(
-        (s) => s.status === "COMPLETED" && s.paymentMethod !== "CREDIT",
-    );
-    const creditSales = sales.filter(
-        (s) => s.status === "COMPLETED" && s.paymentMethod === "CREDIT",
-    );
+    //  Computed stats 
+    const stats = useMemo(() => {
+        const completed = sales.filter((s) => s.status === "COMPLETED");
+        const revenue = completed.filter((s) => s.paymentMethod !== "CREDIT");
+        const credit = completed.filter((s) => s.paymentMethod === "CREDIT");
 
-    const todayRevenue = revenueSales.reduce((sum, s) => sum + s.total, 0);
-    const creditOutstanding = creditSales.reduce((sum, s) => sum + s.total, 0);
-
-    const filteredSales = useMemo(() => {
-        if (!search) return sales;
-        const q = search.toLowerCase();
-        return sales.filter(
-            (s) =>
-                s.receiptNumber.toLowerCase().includes(q) ||
-                s.cashier.name.toLowerCase().includes(q),
+        const totalRevenue = revenue.reduce((sum, s) => sum + s.total, 0);
+        const totalCredit = credit.reduce((sum, s) => sum + s.total, 0);
+        const totalItems = completed.reduce(
+            (sum, s) => sum + (s.items?.reduce((a, i) => a + i.quantity, 0) ?? 0),
+            0,
         );
-    }, [sales, search]);
+        const avgValue = completed.length > 0
+            ? completed.reduce((sum, s) => sum + s.total, 0) / completed.length
+            : 0;
 
-    function renderSale({ item }: { item: SaleWithCashier }) {
+        return {
+            salesCount: completed.length,
+            totalItems,
+            totalRevenue,
+            totalCredit,
+            avgValue,
+            creditCount: credit.length,
+        };
+    }, [sales]);
+
+    //  Handlers 
+    const handleSalePress = useCallback((sale: SaleWithDetails) => {
+        setSelectedSale(sale);
+        bottomSheetRef.current?.snapToIndex(0);
+    }, []);
+
+    const handleViewFull = useCallback(() => {
+        if (selectedSale) {
+            bottomSheetRef.current?.close();
+            router.push(`/(app)/sale/${selectedSale.id}` as any);
+        }
+    }, [selectedSale]);
+
+    const renderBackdrop = useCallback(
+        (props: any) => (
+            <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.4} />
+        ),
+        [],
+    );
+
+    //  Sale row 
+    function renderSale({ item }: { item: SaleWithDetails }) {
         const isVoided = item.status !== "COMPLETED";
         const isCredit = item.paymentMethod === "CREDIT";
+        const itemCount = item.items?.reduce((a, i) => a + i.quantity, 0) ?? 0;
 
         return (
             <Pressable
-                onPress={() => router.push(`/(app)/sale/${item.id}` as any)}
+                onPress={() => handleSalePress(item)}
                 className={cn(
                     "px-5 py-3.5 active:bg-secondary",
                     isCredit && !isVoided && "bg-amber-50",
@@ -98,28 +142,34 @@ export default function SalesScreen() {
                         </View>
                         <View className="flex-row items-center gap-1.5 mt-0.5">
                             <Text className="text-muted-foreground text-xs">{formatTime(item.createdAt)}</Text>
-                            <Text className="text-muted-foreground text-xs">·</Text>
+                            <Text className="text-muted-foreground text-xs">{"\u00B7"}</Text>
+                            <Text className="text-muted-foreground text-xs">
+                                {itemCount} {itemCount === 1 ? "item" : "items"}
+                            </Text>
+                            <Text className="text-muted-foreground text-xs">{"\u00B7"}</Text>
                             <Text className="text-muted-foreground text-xs">
                                 {PAYMENT_METHOD_LABELS[item.paymentMethod]}
                             </Text>
                             {canManage && (
                                 <>
-                                    <Text className="text-muted-foreground text-xs">·</Text>
+                                    <Text className="text-muted-foreground text-xs">{"\u00B7"}</Text>
                                     <Text className="text-muted-foreground text-xs">{item.cashier.name}</Text>
                                 </>
                             )}
                         </View>
                     </View>
-                    <Text className={cn(
-                        "font-bold text-base",
-                        isVoided
-                            ? "text-muted-foreground line-through"
-                            : isCredit
-                                ? "text-amber-600"
-                                : "text-foreground",
-                    )}>
-                        {formatCurrency(item.total, user?.org.currency)}
-                    </Text>
+                    <View className="items-end">
+                        <Text className={cn(
+                            "font-bold text-base",
+                            isVoided
+                                ? "text-muted-foreground line-through"
+                                : isCredit
+                                    ? "text-amber-600"
+                                    : "text-foreground",
+                        )}>
+                            {formatCurrency(item.total, user?.org.currency)}
+                        </Text>
+                    </View>
                 </View>
             </Pressable>
         );
@@ -127,7 +177,7 @@ export default function SalesScreen() {
 
     return (
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-            {/* ── Header ── */}
+            {/*  Header  */}
             <View className="px-5 pt-2 pb-3">
                 <View className="flex-row items-center justify-between mb-3">
                     <View className="flex-row items-center gap-3">
@@ -141,7 +191,9 @@ export default function SalesScreen() {
                         )}
                         <View>
                             <Text className="text-2xl font-bold text-foreground">Sales</Text>
-                            <Text className="text-muted-foreground text-xs">{formatDate(new Date())}</Text>
+                            <Text className="text-muted-foreground text-xs">
+                                {salesTotal} {salesTotal === 1 ? "sale" : "sales"}
+                            </Text>
                         </View>
                     </View>
                     <Button
@@ -153,106 +205,111 @@ export default function SalesScreen() {
                     </Button>
                 </View>
 
-                {/* Search */}
-                <View className="flex-row items-center bg-card border border-border rounded-xl px-3 h-11">
-                    <Ionicons name="search" size={18} color={BRAND.dark} />
-                    <TextInput
-                        placeholder="Search by receipt or cashier..."
-                        placeholderTextColor={BRAND.dark}
-                        value={search}
-                        onChangeText={setSearch}
-                        className="flex-1 ml-2 text-foreground text-sm"
-                    />
-                    {search.length > 0 && (
-                        <Pressable onPress={() => setSearch("")}>
-                            <Ionicons name="close-circle" size={18} color={BRAND.dark} />
+                {/*  Time filter chips  */}
+                <View className="flex-row gap-2">
+                    {PERIODS.map((p) => (
+                        <Pressable
+                            key={p.key}
+                            onPress={() => setPeriod(p.key)}
+                            className={cn(
+                                "px-4 py-1.5 rounded-full border",
+                                period === p.key
+                                    ? "bg-primary border-primary"
+                                    : "bg-card border-border",
+                            )}
+                        >
+                            <Text className={cn(
+                                "text-sm font-medium",
+                                period === p.key ? "text-primary-foreground" : "text-foreground",
+                            )}>
+                                {p.label}
+                            </Text>
                         </Pressable>
-                    )}
+                    ))}
                 </View>
             </View>
 
-            {/* ── Summary Cards ── */}
+            {/*  Stats Row  */}
             {canManage && (
-                <View className={cn("px-5 mb-3", isTablet ? "flex-row gap-3" : "gap-3")}>
-                    {/* Revenue card */}
-                    <View className={cn("p-4 rounded-2xl bg-card border border-border", isTablet ? "flex-1" : "w-full")}>
-                        <View className="flex-row items-center justify-between">
-                            <View>
-                                <Text className="text-muted-foreground text-xs uppercase tracking-wider">
-                                    Cash Revenue
-                                </Text>
-                                <Text className="text-foreground text-2xl font-bold mt-0.5">
-                                    {isLoading ? "—" : formatCurrency(todayRevenue, user?.org.currency)}
-                                </Text>
-                            </View>
-                            <View className="items-end">
-                                <Text className="text-muted-foreground text-xs uppercase tracking-wider">
-                                    Transactions
-                                </Text>
-                                <Text className="text-foreground text-2xl font-bold mt-0.5">
-                                    {isLoading ? "—" : revenueSales.length}
-                                </Text>
-                            </View>
+                <View className="px-5 mb-3">
+                    <View className={cn("flex-row gap-2", isTablet ? "gap-3" : "")}>
+                        {/* Revenue */}
+                        <View className="flex-1 p-3 rounded-xl bg-card border border-border">
+                            <Text className="text-muted-foreground text-[10px] uppercase tracking-wider">
+                                Revenue
+                            </Text>
+                            <Text className="text-foreground text-lg font-bold mt-0.5" numberOfLines={1}>
+                                {isLoading ? "\u2014" : formatCurrency(stats.totalRevenue, user?.org.currency)}
+                            </Text>
+                            <Text className="text-muted-foreground text-[10px] mt-0.5">
+                                {stats.salesCount - stats.creditCount} {stats.salesCount - stats.creditCount === 1 ? "sale" : "sales"}
+                            </Text>
                         </View>
+
+                        {/* Credit */}
+                        {(isLoading || stats.creditCount > 0) && (
+                            <View className="flex-1 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                                <View className="flex-row items-center gap-1">
+                                    <Ionicons name="time-outline" size={10} color={BRAND.yellow} />
+                                    <Text className="text-amber-700 text-[10px] uppercase tracking-wider font-medium">
+                                        Credit
+                                    </Text>
+                                </View>
+                                <Text className="text-amber-700 text-lg font-bold mt-0.5" numberOfLines={1}>
+                                    {isLoading ? "\u2014" : formatCurrency(stats.totalCredit, user?.org.currency)}
+                                </Text>
+                                <Text className="text-amber-700/60 text-[10px] mt-0.5">
+                                    {stats.creditCount} {stats.creditCount === 1 ? "sale" : "sales"}
+                                </Text>
+                            </View>
+                        )}
                     </View>
 
-                    {/* Credit outstanding card */}
-                    {(isLoading || creditSales.length > 0) && (
-                        <View className={cn(
-                            "p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30",
-                            isTablet ? "flex-1" : "w-full",
-                        )}>
-                            <View className="flex-row items-center justify-between">
-                                <View>
-                                    <View className="flex-row items-center gap-1.5">
-                                        <Ionicons name="time-outline" size={14} color={BRAND.yellow} />
-                                        <Text className="text-amber-700 text-xs uppercase tracking-wider font-medium">
-                                            Credit Outstanding
-                                        </Text>
-                                    </View>
-                                    <Text className="text-amber-700 text-2xl font-bold mt-0.5">
-                                        {isLoading ? "—" : formatCurrency(creditOutstanding, user?.org.currency)}
-                                    </Text>
-                                </View>
-                                <View className="items-end">
-                                    <Text className="text-amber-700 text-xs uppercase tracking-wider font-medium">
-                                        Sales
-                                    </Text>
-                                    <Text className="text-amber-700 text-2xl font-bold mt-0.5">
-                                        {isLoading ? "—" : creditSales.length}
-                                    </Text>
-                                </View>
-                            </View>
+                    {/* Second stats row */}
+                    <View className="flex-row gap-2 mt-2">
+                        <View className="flex-1 p-3 rounded-xl bg-card border border-border">
+                            <Text className="text-muted-foreground text-[10px] uppercase tracking-wider">
+                                Items Sold
+                            </Text>
+                            <Text className="text-foreground text-lg font-bold mt-0.5">
+                                {isLoading ? "\u2014" : stats.totalItems}
+                            </Text>
                         </View>
-                    )}
+                        <View className="flex-1 p-3 rounded-xl bg-card border border-border">
+                            <Text className="text-muted-foreground text-[10px] uppercase tracking-wider">
+                                Avg Sale
+                            </Text>
+                            <Text className="text-foreground text-lg font-bold mt-0.5" numberOfLines={1}>
+                                {isLoading ? "\u2014" : formatCurrency(stats.avgValue, user?.org.currency)}
+                            </Text>
+                        </View>
+                    </View>
                 </View>
             )}
 
-            {/* ── Sales List ── */}
+            {/*  Sales List  */}
             {isLoading ? (
                 <View className="px-5 gap-3 mt-2">
                     {Array.from({ length: 6 }).map((_, i) => (
                         <Skeleton key={i} className="h-16 rounded-xl" />
                     ))}
                 </View>
-            ) : filteredSales.length === 0 ? (
+            ) : sales.length === 0 ? (
                 <View className="flex-1 items-center justify-center">
                     <Ionicons name="receipt-outline" size={48} color={BRAND.mid} />
                     <Text className="text-muted-foreground mt-3 text-base">
-                        {search ? "No matching sales" : "No sales today"}
+                        {period === "today" ? "No sales today" : "No sales found"}
                     </Text>
-                    {!search && (
-                        <Button
-                            onPress={() => router.push("/(app)/sale/create")}
-                            className="mt-4 h-10 px-6"
-                        >
-                            <Text className="text-primary-foreground font-semibold text-sm">Start Selling</Text>
-                        </Button>
-                    )}
+                    <Button
+                        onPress={() => router.push("/(app)/sale/create")}
+                        className="mt-4 h-10 px-6"
+                    >
+                        <Text className="text-primary-foreground font-semibold text-sm">Start Selling</Text>
+                    </Button>
                 </View>
             ) : (
                 <FlatList
-                    data={filteredSales}
+                    data={sales}
                     keyExtractor={(item) => item.id}
                     renderItem={renderSale}
                     ItemSeparatorComponent={() => <Separator className="ml-5" />}
@@ -269,6 +326,163 @@ export default function SalesScreen() {
                     contentContainerStyle={{ paddingBottom: 20 }}
                 />
             )}
+
+            {/*  Bottom Sheet: Sale Preview  */}
+            <BottomSheet
+                ref={bottomSheetRef}
+                index={-1}
+                snapPoints={["55%", "80%"]}
+                enablePanDownToClose
+                backdropComponent={renderBackdrop}
+                backgroundStyle={{ backgroundColor: "hsl(0 0% 100%)", borderRadius: 24 }}
+                handleIndicatorStyle={{ backgroundColor: BRAND.mid, width: 40 }}
+                onClose={() => setSelectedSale(null)}
+            >
+                {selectedSale ? (
+                    <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+                        {/* Sheet header */}
+                        <View className="flex-row items-center justify-between mb-4">
+                            <View>
+                                <Text className="text-foreground font-bold text-lg">
+                                    #{selectedSale.receiptNumber}
+                                </Text>
+                                <Text className="text-muted-foreground text-xs">
+                                    {formatDateTime(selectedSale.createdAt)}
+                                </Text>
+                            </View>
+                            <View className="flex-row items-center gap-2">
+                                {selectedSale.paymentMethod === "CREDIT" && selectedSale.status === "COMPLETED" && (
+                                    <View className="px-2 py-1 rounded-lg bg-amber-500/20 border border-amber-500/30">
+                                        <Text className="text-xs font-semibold text-amber-700">CREDIT</Text>
+                                    </View>
+                                )}
+                                <View className={cn(
+                                    "px-2 py-1 rounded-lg",
+                                    selectedSale.status === "COMPLETED"
+                                        ? "bg-primary/10"
+                                        : "bg-destructive/10",
+                                )}>
+                                    <Text className={cn(
+                                        "text-xs font-semibold",
+                                        selectedSale.status === "COMPLETED"
+                                            ? "text-primary"
+                                            : "text-destructive",
+                                    )}>
+                                        {SALE_STATUS_LABELS[selectedSale.status]}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        <Separator />
+
+                        {/* Items list */}
+                        <View className="py-3 gap-2">
+                            <Text className="text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                                Items
+                            </Text>
+                            {selectedSale.items.map((item) => (
+                                <View key={item.id} className="flex-row items-start justify-between">
+                                    <View className="flex-1 mr-2">
+                                        <Text className="text-foreground text-sm">{item.productName}</Text>
+                                        <Text className="text-muted-foreground text-xs">
+                                            {item.quantity} x {formatCurrency(item.unitPrice, user?.org.currency)}
+                                        </Text>
+                                    </View>
+                                    <Text className="text-foreground font-medium text-sm">
+                                        {formatCurrency(item.total, user?.org.currency)}
+                                    </Text>
+                                </View>
+                            ))}
+                        </View>
+
+                        <Separator />
+
+                        {/* Totals */}
+                        <View className="py-3 gap-1">
+                            <View className="flex-row justify-between">
+                                <Text className="text-muted-foreground text-sm">Subtotal</Text>
+                                <Text className="text-foreground text-sm">
+                                    {formatCurrency(selectedSale.subtotal, user?.org.currency)}
+                                </Text>
+                            </View>
+                            {selectedSale.tax > 0 && (
+                                <View className="flex-row justify-between">
+                                    <Text className="text-muted-foreground text-sm">Tax</Text>
+                                    <Text className="text-foreground text-sm">
+                                        {formatCurrency(selectedSale.tax, user?.org.currency)}
+                                    </Text>
+                                </View>
+                            )}
+                            {selectedSale.discount > 0 && (
+                                <View className="flex-row justify-between">
+                                    <Text className="text-muted-foreground text-sm">Discount</Text>
+                                    <Text className="text-destructive text-sm">
+                                        -{formatCurrency(selectedSale.discount, user?.org.currency)}
+                                    </Text>
+                                </View>
+                            )}
+                            <View className="flex-row justify-between mt-1">
+                                <Text className="text-foreground font-bold text-base">Total</Text>
+                                <Text className="text-foreground font-bold text-base">
+                                    {formatCurrency(selectedSale.total, user?.org.currency)}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <Separator />
+
+                        {/* Payment + meta */}
+                        <View className="py-3 gap-1">
+                            <View className="flex-row justify-between">
+                                <Text className="text-muted-foreground text-sm">Payment</Text>
+                                <Text className="text-foreground text-sm">
+                                    {PAYMENT_METHOD_LABELS[selectedSale.paymentMethod]}
+                                </Text>
+                            </View>
+                            {selectedSale.amountTendered != null && (
+                                <View className="flex-row justify-between">
+                                    <Text className="text-muted-foreground text-sm">Tendered</Text>
+                                    <Text className="text-foreground text-sm">
+                                        {formatCurrency(selectedSale.amountTendered, user?.org.currency)}
+                                    </Text>
+                                </View>
+                            )}
+                            {selectedSale.change != null && selectedSale.change > 0 && (
+                                <View className="flex-row justify-between">
+                                    <Text className="text-muted-foreground text-sm">Change</Text>
+                                    <Text className="text-primary font-medium text-sm">
+                                        {formatCurrency(selectedSale.change, user?.org.currency)}
+                                    </Text>
+                                </View>
+                            )}
+                            <View className="flex-row justify-between mt-1">
+                                <Text className="text-muted-foreground text-sm">Cashier</Text>
+                                <Text className="text-foreground text-sm">{selectedSale.cashier.name}</Text>
+                            </View>
+                            {selectedSale.note && (
+                                <View className="mt-2 p-3 rounded-xl bg-secondary">
+                                    <Text className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Note</Text>
+                                    <Text className="text-foreground text-sm">{selectedSale.note}</Text>
+                                </View>
+                            )}
+                        </View>
+
+                        {/* View full detail button */}
+                        <Button
+                            onPress={handleViewFull}
+                            className="mt-3 h-12 w-full flex-row items-center gap-2"
+                        >
+                            <Ionicons name="receipt-outline" size={18} color="hsl(0 0% 98%)" />
+                            <Text className="text-primary-foreground font-semibold">View Full Receipt</Text>
+                        </Button>
+                    </BottomSheetScrollView>
+                ) : (
+                    <View className="flex-1 items-center justify-center">
+                        <ActivityIndicator />
+                    </View>
+                )}
+            </BottomSheet>
         </View>
     );
 }

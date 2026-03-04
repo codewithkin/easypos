@@ -96,20 +96,35 @@ const sales = new Hono<Env>()
     return c.json(sale, 201);
   })
 
-  // ── List sales (today by default) ─────────────────────────────
+  // ── List sales (today by default, supports period filter) ───
   .get("/", zQuery(paginationQuerySchema), async (c) => {
     const orgId = c.get("orgId");
     const role = c.get("role");
     const branchId = c.get("branchId");
     const { page, pageSize } = c.req.valid("query");
 
-    const dateParam = c.req.query("date");
-    const date = dateParam ? new Date(dateParam) : new Date();
+    // Support period: today (default), 7d, 30d, all
+    const period = c.req.query("period") ?? "today";
+    const now = new Date();
 
-    const where: any = {
-      orgId,
-      createdAt: { gte: getStartOfDay(date), lte: getEndOfDay(date) },
-    };
+    const where: any = { orgId };
+
+    if (period === "7d") {
+      const start = new Date(now);
+      start.setDate(start.getDate() - 7);
+      start.setHours(0, 0, 0, 0);
+      where.createdAt = { gte: start, lte: getEndOfDay(now) };
+    } else if (period === "30d") {
+      const start = new Date(now);
+      start.setDate(start.getDate() - 30);
+      start.setHours(0, 0, 0, 0);
+      where.createdAt = { gte: start, lte: getEndOfDay(now) };
+    } else if (period !== "all") {
+      // Default: today
+      const dateParam = c.req.query("date");
+      const date = dateParam ? new Date(dateParam) : now;
+      where.createdAt = { gte: getStartOfDay(date), lte: getEndOfDay(date) };
+    }
 
     // Staff see only their own sales, managers see branch sales
     if (role === "STAFF") {
