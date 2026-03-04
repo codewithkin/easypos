@@ -1,5 +1,6 @@
 import { Link, Stack } from "expo-router";
 import { View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
 import { Text } from "@/components/ui/text";
@@ -15,7 +16,7 @@ export default function NotFoundScreen() {
         entering={FadeInDown.duration(500).springify()}
         className="w-24 h-24 rounded-3xl bg-[#00B25A] items-center justify-center mb-8"
       >
-        <Text className="text-5xl">🗺️</Text>
+        <Ionicons name="map-outline" size={52} color="white" />
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(100).duration(500)} className="items-center mb-2">

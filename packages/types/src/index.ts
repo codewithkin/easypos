@@ -5,7 +5,7 @@ import { z } from "zod";
 export const roleSchema = z.enum(["ADMIN", "MANAGER", "STAFF"]);
 export type Role = z.infer<typeof roleSchema>;
 
-export const paymentMethodSchema = z.enum(["CASH", "MOBILE_MONEY", "CARD"]);
+export const paymentMethodSchema = z.enum(["CASH", "MOBILE_MONEY", "SWIPE", "CREDIT"]);
 export type PaymentMethod = z.infer<typeof paymentMethodSchema>;
 
 export const saleStatusSchema = z.enum(["COMPLETED", "VOIDED", "REFUNDED"]);

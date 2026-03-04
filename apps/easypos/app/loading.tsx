@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -87,9 +88,14 @@ export default function LoadingScreen() {
                 style={logoStyle}
                 className="items-center mb-16"
             >
-                {/* Icon badge */}
+                {/* Icon badge — brand logo: expand arrows + dollar circle */}
                 <View className="w-24 h-24 rounded-3xl bg-primary items-center justify-center mb-6 shadow-2xl">
-                    <Text className="text-5xl">🏪</Text>
+                    <View className="items-center justify-center">
+                        <Ionicons name="expand" size={64} color="rgba(255,255,255,0.3)" style={{ position: "absolute" }} />
+                        <View className="w-10 h-10 rounded-full border-2 border-white items-center justify-center">
+                            <Text className="text-white font-bold text-lg">$</Text>
+                        </View>
+                    </View>
                 </View>
 
                 {/* Wordmark */}

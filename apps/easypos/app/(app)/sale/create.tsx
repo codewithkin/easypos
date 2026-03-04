@@ -112,7 +112,12 @@ export default function CreateSaleScreen() {
             pathname: "/(app)/checkout",
             params: {
                 cart: JSON.stringify(
-                    cart.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+                    cart.map((i) => ({
+                        productId: i.product.id,
+                        quantity: i.quantity,
+                        name: i.product.name,
+                        price: i.product.price,
+                    })),
                 ),
             },
         });

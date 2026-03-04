@@ -94,6 +94,7 @@ export default function SaleDetailScreen() {
 
     const statusColor =
         sale.status === "COMPLETED" ? "text-primary" : "text-destructive";
+    const isCredit = sale.paymentMethod === "CREDIT";
 
     return (
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -126,6 +127,16 @@ export default function SaleDetailScreen() {
                         </Text>
                     </View>
 
+                    {/* Credit banner */}
+                    {isCredit && sale.status === "COMPLETED" && (
+                        <View className="mb-4 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex-row items-center gap-2">
+                            <Ionicons name="time-outline" size={16} color="#D97706" />
+                            <Text className="text-amber-700 text-sm font-semibold">
+                                Credit Sale — Payment Pending
+                            </Text>
+                        </View>
+                    )}
+
                     <Separator />
 
                     {/* Status + receipt number */}
@@ -153,7 +164,7 @@ export default function SaleDetailScreen() {
                                     </Text>
                                 </View>
                                 <Text className="text-foreground font-medium text-sm">
-                                    {formatCurrency(item.subtotal, user?.org.currency)}
+                                    {formatCurrency(item.total, user?.org.currency)}
                                 </Text>
                             </View>
                         ))}
@@ -214,7 +225,7 @@ export default function SaleDetailScreen() {
                                 <View className="flex-row justify-between">
                                     <Text className="text-muted-foreground text-sm">Change</Text>
                                     <Text className="text-primary font-medium text-sm">
-                                        {formatCurrency(sale.change, user?.org.currency)}
+                                        {formatCurrency(sale.change ?? 0, user?.org.currency)}
                                     </Text>
                                 </View>
                             </>

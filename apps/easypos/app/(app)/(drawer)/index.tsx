@@ -48,11 +48,14 @@ export default function DashboardScreen() {
     });
 
     const sales = salesData?.items ?? [];
-    const todayRevenue = sales
-        .filter((s) => s.status === "COMPLETED")
-        .reduce((sum, s) => sum + s.total, 0);
+    // Exclude credit sales from revenue
+    const completedRevenueSales = sales.filter(
+        (s) => s.status === "COMPLETED" && s.paymentMethod !== "CREDIT",
+    );
+    const todayRevenue = completedRevenueSales.reduce((sum, s) => sum + s.total, 0);
     const totalSales = salesData?.total ?? 0;
-    const avgSale = totalSales > 0 ? todayRevenue / totalSales : 0;
+    const revenueCount = completedRevenueSales.length;
+    const avgSale = revenueCount > 0 ? todayRevenue / revenueCount : 0;
     const recentSales = sales.slice(0, 5);
 
     const stats = [
@@ -100,10 +103,19 @@ export default function DashboardScreen() {
                         </Pressable>
                     )}
                     <View className="flex-row items-center gap-2">
-                        <View className="w-8 h-8 rounded-lg bg-primary items-center justify-center">
-                            <Text className="text-primary-foreground text-xs font-bold">E</Text>
+                        <View className="w-9 h-9 rounded-lg bg-primary items-center justify-center">
+                            <View className="items-center justify-center">
+                                <Ionicons name="expand" size={22} color="rgba(255,255,255,0.3)" style={{ position: "absolute" }} />
+                                <View className="w-4 h-4 rounded-full border border-white items-center justify-center">
+                                    <Text className="text-white font-bold text-[9px]">$</Text>
+                                </View>
+                            </View>
                         </View>
-                        <Text className="text-foreground font-bold text-lg tracking-tight">EasyPOS</Text>
+                        <View>
+                            <Text className="text-foreground font-bold text-base tracking-tight leading-tight">
+                                <Text className="text-amber-500">Easy</Text>POS
+                            </Text>
+                        </View>
                     </View>
                 </View>
 
@@ -123,7 +135,7 @@ export default function DashboardScreen() {
                 {/* ── Greeting ── */}
                 <View className="px-5 pt-4 pb-5">
                     <Text className="text-2xl font-bold text-foreground">
-                        Hello, {user?.name?.split(" ")[0]} 👋
+                        Hello, {user?.name?.split(" ")[0]}
                     </Text>
                     <Text className="text-muted-foreground text-sm mt-0.5">
                         {user?.org.name} · {user?.branch?.name ?? "All Branches"}

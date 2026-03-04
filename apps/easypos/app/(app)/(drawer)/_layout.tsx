@@ -55,11 +55,16 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
             <View className="px-5 pt-5 pb-4">
                 <View className="flex-row items-center gap-3">
                     <View className="w-11 h-11 rounded-xl bg-primary items-center justify-center">
-                        <Text className="text-primary-foreground text-lg font-bold">E</Text>
+                        <View className="items-center justify-center">
+                            <Ionicons name="expand" size={28} color="rgba(255,255,255,0.25)" style={{ position: "absolute" }} />
+                            <View className="w-5 h-5 rounded-full border-2 border-white items-center justify-center">
+                                <Text className="text-white font-bold text-[10px]">$</Text>
+                            </View>
+                        </View>
                     </View>
                     <View className="flex-1">
-                        <Text className="text-foreground font-bold text-lg tracking-tight">
-                            EasyPOS
+                        <Text className="text-foreground font-bold text-lg tracking-tight leading-tight">
+                            <Text className="text-amber-500">Easy</Text>POS
                         </Text>
                         <Text className="text-muted-foreground text-[11px]">Point of Sale</Text>
                     </View>

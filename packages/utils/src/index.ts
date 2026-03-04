@@ -1,11 +1,11 @@
 // ── Currency Formatting ────────────────────────────────────────────
 
-export function formatCurrency(amount: number, currency = "UGX"): string {
-  return new Intl.NumberFormat("en-UG", {
+export function formatCurrency(amount: number, currency = "USD"): string {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 
@@ -111,7 +111,8 @@ export const ROLE_LABELS: Record<string, string> = {
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   CASH: "Cash",
   MOBILE_MONEY: "Mobile Money",
-  CARD: "Card",
+  SWIPE: "Swipe",
+  CREDIT: "Credit",
 };
 
 export const SALE_STATUS_LABELS: Record<string, string> = {

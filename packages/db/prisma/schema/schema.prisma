@@ -20,7 +20,8 @@ enum Role {
 enum PaymentMethod {
   CASH
   MOBILE_MONEY
-  CARD
+  SWIPE
+  CREDIT
 }
 
 enum SaleStatus {
