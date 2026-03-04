@@ -19,17 +19,17 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <ThemeProvider value={NAV_THEME.light}>
             <BottomSheetModalProvider>
-            <StatusBar style="dark" />
-            <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="loading" />
-              <Stack.Screen name="(app)" />
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="payments/success" />
-              <Stack.Screen name="payments/failure" />
-            </Stack>
-            <PortalHost />
-            <Toaster />
+              <StatusBar style="dark" />
+              <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="loading" />
+                <Stack.Screen name="(app)" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="payments/success" />
+                <Stack.Screen name="payments/failure" />
+              </Stack>
+              <PortalHost />
+              <Toaster />
             </BottomSheetModalProvider>
           </ThemeProvider>
         </QueryClientProvider>
