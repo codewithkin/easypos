@@ -5,7 +5,6 @@ import { Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
-import * as FileSystem from "expo-file-system";
 import { Ionicons } from "@expo/vector-icons";
 
 import { Text } from "@/components/ui/text";
@@ -52,17 +51,13 @@ async function uploadLogoToR2(imageUri: string): Promise<string> {
         { folder: "logos", contentType: "image/jpeg" },
     );
 
-    // 2. Upload directly to R2 using the presigned URL
-    // Read the image file
-    const fileContent = await FileSystem.readAsStringAsync(imageUri, {
-        encoding: "utf8",
-    });
-
     try {
-        // Convert to Blob for upload
+        // 2. Read image file and convert to blob
+        // Use fetch to get blob from the local file URI
         const response = await fetch(imageUri);
         const blob = await response.blob();
 
+        // 3. Upload blob to R2 presigned URL
         const uploadResponse = await http.put(uploadUrl, blob, {
             headers: { "Content-Type": "image/jpeg" },
             withCredentials: false,
