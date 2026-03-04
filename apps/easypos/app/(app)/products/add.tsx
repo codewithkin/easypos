@@ -3,6 +3,7 @@ import { View, ScrollView, Pressable } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 
 import { Text } from "@/components/ui/text";
 import { Input } from "@/components/ui/input";
@@ -43,10 +44,14 @@ export default function AddProductScreen() {
         path: "/products",
         invalidateKeys: [["products"]],
         onSuccess: () => {
-            toast.success("Product saved");
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            toast.success("Product Created", "The product has been added to your catalogue.");
             router.back();
         },
-        onError: (err) => toast.error(err.message),
+        onError: (err) => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            toast.error("Save Failed", err.message);
+        },
     });
 
     function set(key: keyof Field) {
@@ -55,16 +60,19 @@ export default function AddProductScreen() {
 
     function handleSubmit() {
         if (!fields.name.trim()) {
-            toast.error("Product name is required.");
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            toast.warning("Missing Field", "Product name is required.");
             return;
         }
         if (!fields.sku.trim()) {
-            toast.error("SKU is required.");
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            toast.warning("Missing Field", "SKU is required.");
             return;
         }
         const price = parseFloat(fields.price);
         if (!fields.price || isNaN(price) || price <= 0) {
-            toast.error("Enter a valid selling price.");
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            toast.warning("Invalid Price", "Enter a valid selling price.");
             return;
         }
 

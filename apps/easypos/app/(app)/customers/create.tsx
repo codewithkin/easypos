@@ -38,15 +38,19 @@ export default function CreateCustomerScreen() {
         invalidateKeys: [["customers"]],
         onSuccess: (data) => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            toast.success("Customer added");
+            toast.success("Customer Added", `${data.name} has been saved.`);
             router.back();
         },
-        onError: (err) => toast.error(err.message),
+        onError: (err) => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            toast.error("Save Failed", err.message);
+        },
     });
 
     function handleSubmit() {
         if (!name.trim()) {
-            toast.error("Customer name is required");
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            toast.warning("Missing Field", "Customer name is required.");
             return;
         }
 

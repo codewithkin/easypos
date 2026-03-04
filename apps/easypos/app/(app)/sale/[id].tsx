@@ -3,6 +3,7 @@ import { View, ScrollView, Pressable } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
@@ -47,14 +48,25 @@ export default function SaleDetailScreen() {
         path: `/sales/${id}/void`,
         invalidateKeys: [["sales"], ["sale", id], ["reports"]],
         onSuccess: () => {
-            toast.success("Sale voided");
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            toast.success("Sale Voided", "The sale has been marked as voided.");
         },
-        onError: (err) => toast.error(err.message),
+        onError: (err) => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            toast.error("Void Failed", err.message);
+        },
     });
 
     const { mutate: printReceipt } = useApiPost<unknown, Record<string, never>>({
         path: `/sales/${id}/print`,
-        onError: (err) => toast.error(err.message),
+        onSuccess: () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            toast.success("Print Sent");
+        },
+        onError: (err) => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            toast.error("Print Failed", err.message);
+        },
     });
 
     const canVoid =

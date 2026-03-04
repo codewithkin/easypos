@@ -63,10 +63,12 @@ export default function CheckoutScreen() {
         invalidateKeys: [["sales"], ["reports"]],
         onSuccess: (data) => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            toast.success("Sale Completed", "Receipt #" + (data.receiptNumber ?? ""));
             router.dismiss();
             router.push(`/(app)/sale/${data.id}`);
         },
         onError: (error) => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             toast.error("Sale Failed", error.message);
         },
     });

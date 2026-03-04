@@ -3,6 +3,7 @@ import { View, Pressable, FlatList, RefreshControl } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
@@ -44,10 +45,14 @@ export default function CustomerDetailScreen() {
         path: `/customers/${id}`,
         invalidateKeys: [["customers"]],
         onSuccess: () => {
-            toast.success("Customer deleted");
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            toast.success("Customer Deleted");
             router.back();
         },
-        onError: (err) => toast.error(err.message),
+        onError: (err) => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            toast.error("Delete Failed", err.message);
+        },
     });
 
     if (isLoading) {

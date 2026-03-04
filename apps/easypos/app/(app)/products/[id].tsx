@@ -3,6 +3,7 @@ import { View, ScrollView, Pressable } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 
 import { Text } from "@/components/ui/text";
 import { Input } from "@/components/ui/input";
@@ -68,8 +69,15 @@ export default function EditProductScreen() {
     const { mutate: updateProduct, isPending } = useApiPut<unknown, unknown>({
         path: `/products/${id}`,
         invalidateKeys: [["products"], ["product", id]],
-        onSuccess: () => { toast.success("Product updated"); router.back(); },
-        onError: (err) => toast.error(err.message),
+        onSuccess: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            toast.success("Product Updated");
+            router.back();
+        },
+        onError: (err) => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            toast.error("Update Failed", err.message);
+        },
     });
 
     function handleToggleActive(active: boolean) {
@@ -78,12 +86,14 @@ export default function EditProductScreen() {
 
     function handleSubmit() {
         if (!name.trim() || !sku.trim()) {
-            toast.error("Name and SKU are required.");
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            toast.warning("Missing Fields", "Name and SKU are required.");
             return;
         }
         const parsedPrice = parseFloat(price);
         if (isNaN(parsedPrice) || parsedPrice <= 0) {
-            toast.error("Enter a valid selling price.");
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            toast.warning("Invalid Price", "Enter a valid selling price.");
             return;
         }
 
