@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, http } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import * as Haptics from "expo-haptics";
 
@@ -52,21 +52,32 @@ async function uploadLogoToR2(imageUri: string): Promise<string> {
         { folder: "logos", contentType: "image/jpeg" },
     );
 
-    // 2. Upload the file directly to R2 via the presigned URL
-    const result = await FileSystem.uploadAsync(uploadUrl, imageUri, {
-        httpMethod: "PUT",
-        headers: { "Content-Type": "image/jpeg" },
-        uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+    // 2. Upload directly to R2 using the presigned URL
+    // Read the image file
+    const fileContent = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: "utf8",
     });
 
-    if (result.status < 200 || result.status >= 300) {
-        throw new Error("Logo upload failed");
+    try {
+        // Convert to Blob for upload
+        const response = await fetch(imageUri);
+        const blob = await response.blob();
+
+        const uploadResponse = await http.put(uploadUrl, blob, {
+            headers: { "Content-Type": "image/jpeg" },
+            withCredentials: false,
+        });
+
+        if (uploadResponse.status < 200 || uploadResponse.status >= 300) {
+            throw new Error("Logo upload failed with status " + uploadResponse.status);
+        }
+    } catch (error: any) {
+        console.error("Upload error:", error);
+        throw error;
     }
 
     return publicUrl;
 }
-
-// ── Screen ─────────────────────────────────────────────────────────
 
 export default function RegisterScreen() {
     const insets = useSafeAreaInsets();
