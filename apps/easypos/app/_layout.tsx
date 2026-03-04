@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { PortalHost } from "@rn-primitives/portal";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 import { NAV_THEME } from "@/lib/theme";
 import { queryClient } from "@/lib/query-client";
@@ -17,6 +18,7 @@ export default function RootLayout() {
       <KeyboardProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider value={NAV_THEME.light}>
+            <BottomSheetModalProvider>
             <StatusBar style="dark" />
             <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
               <Stack.Screen name="index" />
@@ -28,6 +30,7 @@ export default function RootLayout() {
             </Stack>
             <PortalHost />
             <Toaster />
+            </BottomSheetModalProvider>
           </ThemeProvider>
         </QueryClientProvider>
       </KeyboardProvider>
