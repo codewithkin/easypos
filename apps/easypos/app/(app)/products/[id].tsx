@@ -12,15 +12,18 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { useApiQuery, useApiPut } from "@/hooks/use-api";
+import { useApiQuery, useApiPut, useApiPost } from "@/hooks/use-api";
 import { useRole } from "@/hooks/use-role";
 import { useAuthStore } from "@/store/auth";
 import { formatCurrency } from "@easypos/utils";
-import type { Product, Category } from "@easypos/types";
+import type { Product, Category, Tag } from "@easypos/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 
-type ProductWithCategory = Product & { category?: { id: string; name: string } | null };
+type ProductWithCategory = Product & {
+    category?: { id: string; name: string } | null;
+    tags?: { tag: { id: string; name: string } }[];
+};
 
 export default function EditProductScreen() {
     const insets = useSafeAreaInsets();
@@ -38,12 +41,29 @@ export default function EditProductScreen() {
         path: "/categories",
     });
 
+    const { data: tagsData, refetch: refetchTags } = useApiQuery<{ items: (Tag & { _count?: { products: number } })[] }>({
+        queryKey: ["tags"],
+        path: "/tags",
+    });
+
+    const { mutate: createTag } = useApiPost<Tag, { name: string }>({
+        path: "/tags",
+        invalidateKeys: [["tags"]],
+        onSuccess: (tag) => {
+            setSelectedTags((prev) => [...prev, tag.id]);
+            setNewTagName("");
+            refetchTags();
+        },
+    });
+
     const [name, setName] = useState("");
     const [sku, setSku] = useState("");
     const [barcode, setBarcode] = useState("");
     const [price, setPrice] = useState("");
     const [cost, setCost] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [newTagName, setNewTagName] = useState("");
     const [isActive, setIsActive] = useState(true);
     const [populated, setPopulated] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -56,6 +76,7 @@ export default function EditProductScreen() {
             setPrice(String(product.price));
             setCost(product.cost != null ? String(product.cost) : "");
             setSelectedCategory(product.categoryId ?? null);
+            setSelectedTags(product.tags?.map((t) => t.tag.id) ?? []);
             setIsActive(product.isActive);
             setPopulated(true);
 
@@ -104,6 +125,7 @@ export default function EditProductScreen() {
             if (!isNaN(c) && c > 0) body.cost = c;
         }
         body.categoryId = selectedCategory ?? undefined;
+        body.tagIds = selectedTags;
 
         updateProduct(body);
     }
@@ -238,6 +260,51 @@ export default function EditProductScreen() {
                                 </View>
                             </>
                         )}
+
+                        <Separator className="my-5" />
+                        <Text className="text-muted-foreground text-xs uppercase tracking-wider mb-3">Tags</Text>
+                        <View className="flex-row flex-wrap gap-2 mb-3">
+                            {(tagsData?.items ?? []).map((tag) => {
+                                const isSelected = selectedTags.includes(tag.id);
+                                return (
+                                    <Pressable
+                                        key={tag.id}
+                                        onPress={() => {
+                                            setSelectedTags((prev) =>
+                                                isSelected ? prev.filter((t) => t !== tag.id) : [...prev, tag.id],
+                                            );
+                                        }}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-full border",
+                                            isSelected ? "bg-primary border-primary" : "bg-secondary border-border",
+                                        )}
+                                    >
+                                        <Text className={cn("text-sm", isSelected ? "text-primary-foreground font-medium" : "text-foreground")}>
+                                            {tag.name}
+                                        </Text>
+                                    </Pressable>
+                                );
+                            })}
+                        </View>
+                        <View className="flex-row gap-2 items-center">
+                            <Input
+                                placeholder="Create new tag..."
+                                value={newTagName}
+                                onChangeText={setNewTagName}
+                                className="flex-1 h-10"
+                                onSubmitEditing={() => {
+                                    if (newTagName.trim()) createTag({ name: newTagName.trim() });
+                                }}
+                            />
+                            <Pressable
+                                onPress={() => {
+                                    if (newTagName.trim()) createTag({ name: newTagName.trim() });
+                                }}
+                                className="h-10 w-10 rounded-xl bg-primary items-center justify-center"
+                            >
+                                <Ionicons name="add" size={20} color="hsl(0 0% 98%)" />
+                            </Pressable>
+                        </View>
 
                         <Separator className="my-5" />
                         <Text className="text-muted-foreground text-xs uppercase tracking-wider mb-3">Visibility</Text>

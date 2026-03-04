@@ -18,7 +18,10 @@ import type { Product, Category } from "@easypos/types";
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/theme";
 
-type ProductWithCategory = Product & { category?: { id: string; name: string } | null };
+type ProductWithCategory = Product & {
+    category?: { id: string; name: string } | null;
+    tags?: { tag: { id: string; name: string } }[];
+};
 
 export default function ProductsScreen() {
     const insets = useSafeAreaInsets();
@@ -90,11 +93,20 @@ export default function ProductsScreen() {
                             <Text className="text-muted-foreground text-xs">SKU: {item.sku}</Text>
                             {item.category && (
                                 <>
-                                    <Text className="text-muted-foreground text-xs">·</Text>
+                                    <Text className="text-muted-foreground text-xs">{"\u00B7"}</Text>
                                     <Text className="text-muted-foreground text-xs">{item.category.name}</Text>
                                 </>
                             )}
                         </View>
+                        {item.tags && item.tags.length > 0 && (
+                            <View className="flex-row flex-wrap gap-1 mt-1">
+                                {item.tags.map((t) => (
+                                    <View key={t.tag.id} className="px-1.5 py-0.5 rounded bg-primary/10">
+                                        <Text className="text-[10px] text-primary font-medium">{t.tag.name}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
                     </View>
                     <View className="items-end gap-0.5">
                         <Text className="text-foreground font-bold text-sm">

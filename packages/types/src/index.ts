@@ -88,6 +88,14 @@ export const categorySchema = z.object({
 });
 export type Category = z.infer<typeof categorySchema>;
 
+export const tagSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  orgId: z.string(),
+  createdAt: z.coerce.date(),
+});
+export type Tag = z.infer<typeof tagSchema>;
+
 export const productSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -244,6 +252,7 @@ export const createProductRequestSchema = z.object({
   cost: z.number().positive().optional(),
   categoryId: z.string().optional(),
   isActive: z.boolean().optional(),
+  tagIds: z.array(z.string()).optional(),
 });
 export type CreateProductRequest = z.infer<typeof createProductRequestSchema>;
 

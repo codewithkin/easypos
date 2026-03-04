@@ -11,6 +11,7 @@ import products from "./routes/products.js";
 import categories from "./routes/categories.js";
 import sales from "./routes/sales.js";
 import customers from "./routes/customers.js";
+import tags from "./routes/tags.js";
 import devices from "./routes/devices.js";
 import reports from "./routes/reports.js";
 import billing, { billingWebhook } from "./routes/billing.js";
@@ -36,6 +37,7 @@ const app = new Hono()
   .route("/categories", categories)
   .route("/sales", sales)
   .route("/customers", customers)
+  .route("/tags", tags)
   .route("/devices", devices)
   .route("/reports", reports)
   .route("/billing", billing)

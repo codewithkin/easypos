@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useApiQuery, useApiPost } from "@/hooks/use-api";
 import { toast } from "@/lib/toast";
-import type { Category } from "@easypos/types";
+import type { Category, Tag } from "@easypos/types";
 import { cn } from "@/lib/utils";
 
 interface Field {
@@ -33,11 +33,28 @@ export default function AddProductScreen() {
         cost: "",
     });
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [isActive, setIsActive] = useState(true);
+    const [newTagName, setNewTagName] = useState("");
 
     const { data: categoriesData } = useApiQuery<{ items: Category[] }>({
         queryKey: ["categories"],
         path: "/categories",
+    });
+
+    const { data: tagsData, refetch: refetchTags } = useApiQuery<{ items: (Tag & { _count?: { products: number } })[] }>({
+        queryKey: ["tags"],
+        path: "/tags",
+    });
+
+    const { mutate: createTag } = useApiPost<Tag, { name: string }>({
+        path: "/tags",
+        invalidateKeys: [["tags"]],
+        onSuccess: (tag) => {
+            setSelectedTags((prev) => [...prev, tag.id]);
+            setNewTagName("");
+            refetchTags();
+        },
     });
 
     const { mutate: createProduct, isPending } = useApiPost<unknown, unknown>({
@@ -89,6 +106,7 @@ export default function AddProductScreen() {
             if (!isNaN(cost) && cost > 0) body.cost = cost;
         }
         if (selectedCategory) body.categoryId = selectedCategory;
+        if (selectedTags.length > 0) body.tagIds = selectedTags;
 
         createProduct(body);
     }
@@ -221,6 +239,55 @@ export default function AddProductScreen() {
                         <Separator className="my-5" />
                     </>
                 )}
+
+                {/* Tags */}
+                <Text className="text-muted-foreground text-xs uppercase tracking-wider mb-3">
+                    Tags
+                </Text>
+                <View className="flex-row flex-wrap gap-2 mb-3">
+                    {(tagsData?.items ?? []).map((tag) => {
+                        const isSelected = selectedTags.includes(tag.id);
+                        return (
+                            <Pressable
+                                key={tag.id}
+                                onPress={() => {
+                                    setSelectedTags((prev) =>
+                                        isSelected ? prev.filter((t) => t !== tag.id) : [...prev, tag.id],
+                                    );
+                                }}
+                                className={cn(
+                                    "px-3 py-1.5 rounded-full border",
+                                    isSelected ? "bg-primary border-primary" : "bg-secondary border-border",
+                                )}
+                            >
+                                <Text className={cn("text-sm", isSelected ? "text-primary-foreground font-medium" : "text-foreground")}>
+                                    {tag.name}
+                                </Text>
+                            </Pressable>
+                        );
+                    })}
+                </View>
+                <View className="flex-row gap-2 items-center">
+                    <Input
+                        placeholder="Create new tag..."
+                        value={newTagName}
+                        onChangeText={setNewTagName}
+                        className="flex-1 h-10"
+                        onSubmitEditing={() => {
+                            if (newTagName.trim()) createTag({ name: newTagName.trim() });
+                        }}
+                    />
+                    <Pressable
+                        onPress={() => {
+                            if (newTagName.trim()) createTag({ name: newTagName.trim() });
+                        }}
+                        className="h-10 w-10 rounded-xl bg-primary items-center justify-center"
+                    >
+                        <Ionicons name="add" size={20} color="hsl(0 0% 98%)" />
+                    </Pressable>
+                </View>
+
+                <Separator className="my-5" />
 
                 {/* Status */}
                 <Text className="text-muted-foreground text-xs uppercase tracking-wider mb-3">

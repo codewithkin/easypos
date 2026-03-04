@@ -35,7 +35,10 @@ const products = new Hono<Env>()
     const [items, total] = await Promise.all([
       db.product.findMany({
         where,
-        include: { category: { select: { id: true, name: true } } },
+        include: {
+          category: { select: { id: true, name: true } },
+          tags: { include: { tag: true } },
+        },
         skip: getPaginationSkip(page, pageSize),
         take: pageSize,
         orderBy: { name: "asc" },
@@ -53,7 +56,10 @@ const products = new Hono<Env>()
 
     const product = await db.product.findFirst({
       where: { id, orgId },
-      include: { category: { select: { id: true, name: true } } },
+      include: {
+        category: { select: { id: true, name: true } },
+        tags: { include: { tag: true } },
+      },
     });
 
     if (!product) return c.json({ error: "Product not found" }, 404);
@@ -76,9 +82,20 @@ const products = new Hono<Env>()
     });
     if (existingSku) return c.json({ error: "SKU already exists" }, 409);
 
+    const { tagIds, ...productData } = data as any;
+
     const product = await db.product.create({
-      data: { ...data, orgId },
-      include: { category: { select: { id: true, name: true } } },
+      data: {
+        ...productData,
+        orgId,
+        ...(tagIds?.length && {
+          tags: { create: tagIds.map((tagId: string) => ({ tagId })) },
+        }),
+      },
+      include: {
+        category: { select: { id: true, name: true } },
+        tags: { include: { tag: true } },
+      },
     });
 
     // Track product overage if applicable
@@ -101,10 +118,25 @@ const products = new Hono<Env>()
       if (skuTaken) return c.json({ error: "SKU already exists" }, 409);
     }
 
+    const { tagIds, ...updateData } = data as any;
+
+    // If tagIds provided, replace all tag associations
+    if (tagIds !== undefined) {
+      await db.productTag.deleteMany({ where: { productId: id } });
+      if (tagIds.length > 0) {
+        await db.productTag.createMany({
+          data: tagIds.map((tagId: string) => ({ productId: id, tagId })),
+        });
+      }
+    }
+
     const product = await db.product.update({
       where: { id },
-      data,
-      include: { category: { select: { id: true, name: true } } },
+      data: updateData,
+      include: {
+        category: { select: { id: true, name: true } },
+        tags: { include: { tag: true } },
+      },
     });
 
     return c.json(product);

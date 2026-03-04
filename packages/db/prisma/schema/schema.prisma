@@ -71,6 +71,7 @@ model Organization {
   products             Product[]
   sales                Sale[]
   customers            Customer[]
+  tags                 Tag[]
   auditLogs            AuditLog[]
   intermediatePayments IntermediatePayment[]
 }
@@ -202,10 +203,37 @@ model Product {
   category  Category?    @relation(fields: [categoryId], references: [id])
   org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   saleItems SaleItem[]
+  tags      ProductTag[]
 
   @@unique([sku, orgId])
   @@index([orgId])
   @@index([categoryId])
+}
+
+// ── Product Tags ───────────────────────────────────────────────────
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  orgId     String
+  createdAt DateTime @default(now())
+
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  products ProductTag[]
+
+  @@unique([name, orgId])
+  @@index([orgId])
+}
+
+model ProductTag {
+  productId String
+  tagId     String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+  @@index([tagId])
 }
 
 // ── Sales Ledger ───────────────────────────────────────────────────
