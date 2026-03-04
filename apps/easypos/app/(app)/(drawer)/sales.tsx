@@ -260,12 +260,6 @@ export default function SalesScreen() {
         </View>
     );
 }
-
-
-export default function SalesScreen() {
-    const insets = useSafeAreaInsets();
-    const navigation = useNavigation();
-    const { width } = useWindowDimensions();
     const isTablet = width >= 768;
     const user = useAuthStore((s) => s.user);
     const { canManage } = useRole();

@@ -267,12 +267,6 @@ export default function CheckoutScreen() {
     );
 }
 
-
-export default function CheckoutScreen() {
-    const insets = useSafeAreaInsets();
-    const params = useLocalSearchParams<{ cart: string }>();
-    const user = useAuthStore((s) => s.user);
-
     const { canManage } = useRole();
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
     const [amountTendered, setAmountTendered] = useState("");
