@@ -24,7 +24,7 @@ export const THEME = {
     popoverForeground:  "hsl(228 17% 21%)",
     primary:            "hsl(149 100% 35%)",
     primaryForeground:  "hsl(0 0% 100%)",
-    secondary:          "hsl(38 92% 50%)",
+    secondary:          "hsl(220 14% 96%)",
     secondaryForeground:"hsl(228 17% 21%)",
     muted:              "hsl(203 24% 88%)",
     mutedForeground:    "hsl(228 13% 41%)",
