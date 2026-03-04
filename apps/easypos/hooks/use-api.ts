@@ -57,6 +57,26 @@ export function useApiPut<TData = unknown, TBody = unknown>(options: {
   });
 }
 
+export function useApiPatch<TData = unknown, TBody = unknown>(options: {
+  path: string;
+  invalidateKeys?: QueryKey[];
+  onSuccess?: (data: TData) => void;
+  onError?: (error: ApiError) => void;
+}) {
+  const queryClient = useQueryClient();
+
+  return useMutation<TData, ApiError, TBody>({
+    mutationFn: (body) => api.patch<TData>(options.path, body),
+    onSuccess: (data) => {
+      options.invalidateKeys?.forEach((key) => {
+        queryClient.invalidateQueries({ queryKey: key });
+      });
+      options.onSuccess?.(data);
+    },
+    onError: options.onError,
+  });
+}
+
 export function useApiDelete<TData = unknown>(options: {
   path: string;
   invalidateKeys?: QueryKey[];

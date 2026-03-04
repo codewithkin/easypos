@@ -1,6 +1,7 @@
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./auth-storage";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+const BASE_URL = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
 // ── Error class ────────────────────────────────────────────────────
 
@@ -24,18 +25,10 @@ async function refreshAccessToken(): Promise<boolean> {
   if (!refreshToken) return false;
 
   try {
-    const res = await fetch(`${API_URL}/api/auth/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken }),
-    });
-
-    if (!res.ok) {
-      await clearTokens();
-      return false;
-    }
-
-    const data = await res.json();
+    const { data } = await axios.post<{ accessToken: string; refreshToken: string }>(
+      `${BASE_URL}/api/auth/refresh`,
+      { refreshToken },
+    );
     await setTokens(data.accessToken, data.refreshToken);
     return true;
   } catch {
@@ -44,7 +37,6 @@ async function refreshAccessToken(): Promise<boolean> {
   }
 }
 
-// Deduplicate concurrent refresh calls
 function ensureRefresh(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = refreshAccessToken().finally(() => {
@@ -54,65 +46,75 @@ function ensureRefresh(): Promise<boolean> {
   return refreshPromise;
 }
 
-// ── Main apiFetch function ─────────────────────────────────────────
+// ── Axios instance for our API ─────────────────────────────────────
 
-interface FetchOptions extends Omit<RequestInit, "body"> {
-  body?: unknown;
-}
+type RequestWithRetry = InternalAxiosRequestConfig & { _retry?: boolean };
 
-export async function apiFetch<T = unknown>(path: string, options?: FetchOptions): Promise<T> {
+export const apiClient = axios.create({
+  baseURL: `${BASE_URL}/api`,
+  headers: { "Content-Type": "application/json" },
+});
+
+// Attach auth token to every outgoing request
+apiClient.interceptors.request.use(async (config) => {
   const token = await getAccessToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-  const url = `${API_URL}/api${path}`;
+// Handle 401 → auto-refresh + retry; convert AxiosError → ApiError
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError<{ error?: string; details?: unknown }>) => {
+    const original = error.config as RequestWithRetry | undefined;
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(options?.headers as Record<string, string>),
-  };
-
-  const config: RequestInit = {
-    ...options,
-    headers,
-    body: options?.body ? JSON.stringify(options.body) : undefined,
-  };
-
-  let response = await fetch(url, config);
-
-  // Auto-refresh on 401
-  if (response.status === 401 && token) {
-    const refreshed = await ensureRefresh();
-    if (refreshed) {
-      const newToken = await getAccessToken();
-      headers.Authorization = `Bearer ${newToken}`;
-      response = await fetch(url, { ...config, headers });
+    if (error.response?.status === 401 && original && !original._retry) {
+      original._retry = true;
+      const refreshed = await ensureRefresh();
+      if (refreshed) {
+        const newToken = await getAccessToken();
+        original.headers.Authorization = `Bearer ${newToken}`;
+        return apiClient(original);
+      }
     }
-  }
 
-  if (!response.ok) {
-    let errorBody: any = {};
-    try {
-      errorBody = await response.json();
-    } catch {}
-    throw new ApiError(response.status, errorBody.error ?? "Request failed", errorBody.details);
-  }
+    const status = error.response?.status ?? 0;
+    const message = error.response?.data?.error ?? error.message ?? "Request failed";
+    const details = error.response?.data?.details;
+    throw new ApiError(status, message, details);
+  },
+);
 
-  // Handle 204 No Content
-  if (response.status === 204) return undefined as T;
+// ── apiFetch ───────────────────────────────────────────────────────
 
-  return response.json() as Promise<T>;
+export async function apiFetch<T = unknown>(
+  path: string,
+  config?: Parameters<typeof apiClient.request>[0],
+): Promise<T> {
+  const { data } = await apiClient.request<T>({ url: path, ...config });
+  return data;
 }
 
-// ── Convenience wrappers ───────────────────────────────────────────
+// ── API convenience wrappers ───────────────────────────────────────
 
 export const api = {
-  get: <T = unknown>(path: string) => apiFetch<T>(path, { method: "GET" }),
+  get: <T = unknown>(path: string) =>
+    apiFetch<T>(path, { method: "get" }),
 
   post: <T = unknown>(path: string, body?: unknown) =>
-    apiFetch<T>(path, { method: "POST", body }),
+    apiFetch<T>(path, { method: "post", data: body }),
 
   put: <T = unknown>(path: string, body?: unknown) =>
-    apiFetch<T>(path, { method: "PUT", body }),
+    apiFetch<T>(path, { method: "put", data: body }),
 
-  delete: <T = unknown>(path: string) => apiFetch<T>(path, { method: "DELETE" }),
+  patch: <T = unknown>(path: string, body?: unknown) =>
+    apiFetch<T>(path, { method: "patch", data: body }),
+
+  delete: <T = unknown>(path: string) =>
+    apiFetch<T>(path, { method: "delete" }),
 };
+
+// ── External HTTP client (presigned URLs etc., no auth interceptors) ──
+export const http = axios.create();

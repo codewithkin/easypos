@@ -5,6 +5,7 @@ import { Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
+import * as FileSystem from "expo-file-system";
 import { Ionicons } from "@expo/vector-icons";
 
 import { Text } from "@/components/ui/text";
@@ -12,11 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
-import { ApiError } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import * as Haptics from "expo-haptics";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
 // ── Logo picker helpers ────────────────────────────────────────────
 
@@ -47,33 +46,20 @@ async function pickAndCropLogo(): Promise<ImageManipulator.ImageResult | null> {
 }
 
 async function uploadLogoToR2(imageUri: string): Promise<string> {
-    // 1. Get presigned URL from server
-    const presignRes = await fetch(`${API_URL}/api/uploads/presign`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ folder: "logos", contentType: "image/jpeg" }),
-    });
+    // 1. Get presigned URL from our server
+    const { uploadUrl, publicUrl } = await api.post<{ uploadUrl: string; publicUrl: string }>(
+        "/uploads/presign",
+        { folder: "logos", contentType: "image/jpeg" },
+    );
 
-    if (!presignRes.ok) {
-        throw new Error("Failed to get upload URL");
-    }
-
-    const { uploadUrl, publicUrl } = (await presignRes.json()) as {
-        uploadUrl: string;
-        publicUrl: string;
-    };
-
-    // 2. Upload directly to R2 via the presigned URL
-    const fileRes = await fetch(imageUri);
-    const blob = await fileRes.blob();
-
-    const uploadRes = await fetch(uploadUrl, {
-        method: "PUT",
+    // 2. Upload the file directly to R2 via the presigned URL
+    const result = await FileSystem.uploadAsync(uploadUrl, imageUri, {
+        httpMethod: "PUT",
         headers: { "Content-Type": "image/jpeg" },
-        body: blob,
+        uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
     });
 
-    if (!uploadRes.ok) {
+    if (result.status < 200 || result.status >= 300) {
         throw new Error("Logo upload failed");
     }
 
@@ -108,7 +94,8 @@ export default function RegisterScreen() {
             setLogoUploading(true);
             const url = await uploadLogoToR2(image.uri);
             setLogoUrl(url);
-        } catch {
+        } catch (e) {
+            console.log("Error uploading logo:", e);
             toast.error("Could not upload logo. You can still continue without one.");
             setLogoUri(null);
             setLogoUrl(null);
