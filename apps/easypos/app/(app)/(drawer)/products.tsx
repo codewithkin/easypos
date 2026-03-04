@@ -192,7 +192,9 @@ export default function ProductsScreen() {
             ) : filtered.length === 0 ? (
                 <View className="flex-1 items-center justify-center">
                     <Ionicons name="cube-outline" size={48} color={BRAND.mid} />
-                    <Text className="text-muted-foreground mt-3 text-base">No products found</Text>
+                    <Text className="text-muted-foreground mt-3 text-base">
+                        {search || selectedCategory ? "No matching products" : "No products yet"}
+                    </Text>
                     {canManage && (
                         <Button
                             onPress={() => router.push("/(app)/products/add")}
