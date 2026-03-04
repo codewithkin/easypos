@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/store/auth";
 import { useRole } from "@/hooks/use-role";
-import { useApiQuery } from "@/hooks/use-api";
+import { useApiPaginatedQuery } from "@/hooks/use-api";
 import { formatCurrency, formatTime, formatDate, PAYMENT_METHOD_LABELS, SALE_STATUS_LABELS } from "@easypos/utils";
 import type { Sale } from "@easypos/types";
 import { cn } from "@/lib/utils";
@@ -30,16 +30,19 @@ export default function SalesScreen() {
     const [search, setSearch] = useState("");
 
     const {
-        data: salesData,
+        items: sales,
+        total: salesTotal,
         isLoading,
         refetch,
         isRefetching,
-    } = useApiQuery<{ items: SaleWithCashier[]; total: number }>({
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useApiPaginatedQuery<SaleWithCashier>({
         queryKey: ["sales", "today"],
         path: "/sales",
+        pageSize: 10,
     });
-
-    const sales = salesData?.items ?? [];
 
     // Revenue = completed non-credit sales
     const revenueSales = sales.filter(
@@ -254,6 +257,15 @@ export default function SalesScreen() {
                     renderItem={renderSale}
                     ItemSeparatorComponent={() => <Separator className="ml-5" />}
                     refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+                    onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage(); }}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={
+                        isFetchingNextPage ? (
+                            <View className="py-4 items-center">
+                                <Text className="text-muted-foreground text-xs">Loading more...</Text>
+                            </View>
+                        ) : null
+                    }
                     contentContainerStyle={{ paddingBottom: 20 }}
                 />
             )}

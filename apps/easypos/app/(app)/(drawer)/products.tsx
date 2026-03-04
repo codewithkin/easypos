@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/store/auth";
 import { useRole } from "@/hooks/use-role";
-import { useApiQuery } from "@/hooks/use-api";
+import { useApiQuery, useApiPaginatedQuery } from "@/hooks/use-api";
 import { formatCurrency } from "@easypos/utils";
 import type { Product, Category } from "@easypos/types";
 import { cn } from "@/lib/utils";
@@ -30,12 +30,19 @@ export default function ProductsScreen() {
     const [search, setSearch] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-    const { data: productsData, isLoading, refetch, isRefetching } = useApiQuery<{
-        items: ProductWithCategory[];
-        total: number;
-    }>({
+    const {
+        items: allProducts,
+        total: productsTotal,
+        isLoading,
+        refetch,
+        isRefetching,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useApiPaginatedQuery<ProductWithCategory>({
         queryKey: ["products", "manage"],
-        path: "/products?pageSize=200",
+        path: "/products",
+        pageSize: 10,
     });
 
     const { data: categoriesData } = useApiQuery<{ items: Category[] }>({
@@ -43,7 +50,7 @@ export default function ProductsScreen() {
         path: "/categories",
     });
 
-    const products = productsData?.items ?? [];
+    const products = allProducts;
     const categories = categoriesData?.items ?? [];
 
     const filtered = useMemo(() => {
@@ -121,7 +128,7 @@ export default function ProductsScreen() {
                         <View>
                             <Text className="text-2xl font-bold text-foreground">Products</Text>
                             <Text className="text-muted-foreground text-xs">
-                                {activeCount} active · {productsData?.total ?? 0} total
+                                {activeCount} active · {productsTotal} total
                             </Text>
                         </View>
                     </View>
@@ -211,6 +218,15 @@ export default function ProductsScreen() {
                     renderItem={renderProduct}
                     ItemSeparatorComponent={() => <Separator className="ml-5" />}
                     refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+                    onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage(); }}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={
+                        isFetchingNextPage ? (
+                            <View className="py-4 items-center">
+                                <Text className="text-muted-foreground text-xs">Loading more...</Text>
+                            </View>
+                        ) : null
+                    }
                     contentContainerStyle={{ paddingBottom: 40 }}
                 />
             )}

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/store/auth";
-import { useApiQuery } from "@/hooks/use-api";
+import { useApiPaginatedQuery } from "@/hooks/use-api";
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/theme";
 
@@ -34,15 +34,20 @@ export default function CustomersScreen() {
     const user = useAuthStore((s) => s.user);
     const [search, setSearch] = useState("");
 
-    const { data, isLoading, refetch, isRefetching } = useApiQuery<{
-        items: Customer[];
-        total: number;
-    }>({
+    const {
+        items: customers,
+        total: customersTotal,
+        isLoading,
+        refetch,
+        isRefetching,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useApiPaginatedQuery<Customer>({
         queryKey: ["customers"],
-        path: "/customers?pageSize=200",
+        path: "/customers",
+        pageSize: 10,
     });
-
-    const customers = data?.items ?? [];
 
     const filtered = useMemo(() => {
         if (!search) return customers;
@@ -121,7 +126,7 @@ export default function CustomersScreen() {
                         <View>
                             <Text className="text-2xl font-bold text-foreground">Customers</Text>
                             <Text className="text-muted-foreground text-xs">
-                                {data?.total ?? 0} total
+                                {customersTotal} total
                             </Text>
                         </View>
                     </View>
@@ -180,6 +185,15 @@ export default function CustomersScreen() {
                     renderItem={renderCustomer}
                     ItemSeparatorComponent={() => <Separator className="ml-16" />}
                     refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+                    onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage(); }}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={
+                        isFetchingNextPage ? (
+                            <View className="py-4 items-center">
+                                <Text className="text-muted-foreground text-xs">Loading more...</Text>
+                            </View>
+                        ) : null
+                    }
                     contentContainerStyle={{ paddingBottom: 40 }}
                 />
             )}
