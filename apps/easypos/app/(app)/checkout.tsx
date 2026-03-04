@@ -17,6 +17,7 @@ import { toast } from "@/lib/toast";
 import type { Sale, PaymentMethod } from "@easypos/types";
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/theme";
+import { BackButton } from "@/components/back-button";
 
 interface CartItem {
     productId: string;
@@ -102,9 +103,7 @@ export default function CheckoutScreen() {
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             {/* Header */}
             <View className="flex-row items-center px-4 h-14 border-b border-border bg-card">
-                <Pressable onPress={() => router.back()} className="mr-3">
-                    <Ionicons name="close" size={24} color={BRAND.dark} />
-                </Pressable>
+                <BackButton />
                 <Text className="text-foreground font-semibold text-lg flex-1">Checkout</Text>
             </View>
 

@@ -76,6 +76,19 @@ export function generateReceiptNumber(): string {
   return `RCP-${date}-${rand}`;
 }
 
+export function generateSku(productName: string): string {
+  const prefix = productName
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s]/g, "")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 3)
+    .map((w) => w.slice(0, 4))
+    .join("-");
+  const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+  return `${prefix || "PROD"}-${rand}`;
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()

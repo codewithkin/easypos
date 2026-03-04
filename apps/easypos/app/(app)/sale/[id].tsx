@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { BackButton } from "@/components/back-button";
 import { useAuthStore } from "@/store/auth";
 import { useApiQuery, useApiPost } from "@/hooks/use-api";
 import { toast } from "@/lib/toast";
@@ -112,9 +113,7 @@ export default function SaleDetailScreen() {
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             {/* Header */}
             <View className="flex-row items-center px-4 h-14 border-b border-border bg-card">
-                <Pressable onPress={() => router.back()} className="mr-3">
-                    <Ionicons name="arrow-back" size={24} color="hsl(0 0% 63.9%)" />
-                </Pressable>
+                <BackButton />
                 <Text className="text-foreground font-semibold text-lg flex-1">Receipt</Text>
                 {canVoid && (
                     <Pressable onPress={handleVoid} disabled={voiding}>

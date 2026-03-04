@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Pressable, Linking } from "react-native";
 import { router, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { BackButton } from "@/components/back-button";
 
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
@@ -86,9 +87,7 @@ export default function PlansScreen() {
                     headerShown: true,
                     title: "Choose a Plan",
                     headerLeft: () => (
-                        <Pressable onPress={() => router.back()} className="mr-4">
-                            <Ionicons name="arrow-back" size={24} color="hsl(0 0% 45%)" />
-                        </Pressable>
+                        <BackButton />
                     ),
                 }}
             />

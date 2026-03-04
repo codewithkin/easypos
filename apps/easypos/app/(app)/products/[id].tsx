@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { View, ScrollView, Pressable } from "react-native";
+import { View, ScrollView, Pressable, Image, ActivityIndicator } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { BackButton } from "@/components/back-button";
 import { useApiQuery, useApiPut, useApiPost } from "@/hooks/use-api";
 import { useRole } from "@/hooks/use-role";
 import { useAuthStore } from "@/store/auth";
@@ -19,6 +20,8 @@ import { formatCurrency } from "@easypos/utils";
 import type { Product, Category, Tag } from "@easypos/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { pickAndUploadSquareImage } from "@/lib/upload";
+import { BRAND } from "@/lib/theme";
 
 type ProductWithCategory = Product & {
     category?: { id: string; name: string } | null;
@@ -58,7 +61,6 @@ export default function EditProductScreen() {
 
     const [name, setName] = useState("");
     const [sku, setSku] = useState("");
-    const [barcode, setBarcode] = useState("");
     const [price, setPrice] = useState("");
     const [cost, setCost] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -67,17 +69,23 @@ export default function EditProductScreen() {
     const [isActive, setIsActive] = useState(true);
     const [populated, setPopulated] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [imageUri, setImageUri] = useState<string | null>(null);
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [imageUploading, setImageUploading] = useState(false);
 
     useEffect(() => {
         if (product && !populated) {
             setName(product.name);
             setSku(product.sku);
-            setBarcode(product.barcode ?? "");
             setPrice(String(product.price));
             setCost(product.cost != null ? String(product.cost) : "");
             setSelectedCategory(product.categoryId ?? null);
             setSelectedTags(product.tags?.map((t) => t.tag.id) ?? []);
             setIsActive(product.isActive);
+            if ((product as any).imageUrl) {
+                setImageUri((product as any).imageUrl);
+                setImageUrl((product as any).imageUrl);
+            }
             setPopulated(true);
 
             // If coming from confirmDelete flow, trigger delete dialog
@@ -101,6 +109,21 @@ export default function EditProductScreen() {
         },
     });
 
+    async function handlePickImage() {
+        try {
+            setImageUploading(true);
+            const url = await pickAndUploadSquareImage("products");
+            if (url) {
+                setImageUri(url);
+                setImageUrl(url);
+            }
+        } catch (e: any) {
+            toast.error("Image Upload Failed", e.message ?? "Could not upload image.");
+        } finally {
+            setImageUploading(false);
+        }
+    }
+
     function handleToggleActive(active: boolean) {
         updateProduct({ isActive: active });
     }
@@ -119,13 +142,13 @@ export default function EditProductScreen() {
         }
 
         const body: any = { name: name.trim(), sku: sku.trim(), price: parsedPrice, isActive };
-        if (barcode.trim()) body.barcode = barcode.trim();
         if (cost.trim()) {
             const c = parseFloat(cost);
-            if (!isNaN(c) && c > 0) body.cost = c;
+            if (!isNaN(c) && c >= 0) body.cost = c;
         }
         body.categoryId = selectedCategory ?? undefined;
         body.tagIds = selectedTags;
+        if (imageUrl) body.imageUrl = imageUrl;
 
         updateProduct(body);
     }
@@ -136,9 +159,7 @@ export default function EditProductScreen() {
         return (
             <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
                 <View className="flex-row items-center px-4 h-14 border-b border-border bg-card">
-                    <Pressable onPress={() => router.back()} className="mr-3">
-                        <Ionicons name="arrow-back" size={24} color="hsl(0 0% 63.9%)" />
-                    </Pressable>
+                    <BackButton />
                     <Skeleton className="h-5 w-40" />
                 </View>
                 <View className="px-4 gap-4 mt-5">
@@ -154,9 +175,7 @@ export default function EditProductScreen() {
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             {/* Header */}
             <View className="flex-row items-center px-4 h-14 border-b border-border bg-card">
-                <Pressable onPress={() => router.back()} className="mr-3">
-                    <Ionicons name="arrow-back" size={24} color="hsl(0 0% 63.9%)" />
-                </Pressable>
+                <BackButton />
                 <Text className="text-foreground font-semibold text-lg flex-1" numberOfLines={1}>
                     {product?.name ?? "Edit Product"}
                 </Text>
@@ -206,21 +225,40 @@ export default function EditProductScreen() {
             {canManage && (
                 <>
                     <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 40 }}>
+                        {/* Product Image */}
+                        <View className="items-center mt-6 mb-2">
+                            <Pressable
+                                onPress={handlePickImage}
+                                disabled={imageUploading}
+                                className="w-32 h-32 rounded-2xl bg-secondary border-2 border-dashed border-border items-center justify-center overflow-hidden"
+                            >
+                                {imageUploading ? (
+                                    <ActivityIndicator color={BRAND.brand} />
+                                ) : imageUri ? (
+                                    <Image source={{ uri: imageUri }} className="w-full h-full" resizeMode="cover" />
+                                ) : (
+                                    <View className="items-center gap-1">
+                                        <Ionicons name="camera-outline" size={28} color="hsl(0 0% 45%)" />
+                                        <Text className="text-muted-foreground text-xs">Add Photo</Text>
+                                    </View>
+                                )}
+                            </Pressable>
+                            {imageUri && !imageUploading && (
+                                <Pressable onPress={handlePickImage} className="mt-2">
+                                    <Text className="text-primary text-xs font-medium">Change Photo</Text>
+                                </Pressable>
+                            )}
+                        </View>
+
                         <Text className="text-muted-foreground text-xs uppercase tracking-wider mt-5 mb-3">Basic Info</Text>
                         <View className="gap-4">
                             <View className="gap-1.5">
                                 <Label nativeID="name">Product Name *</Label>
                                 <Input id="name" value={name} onChangeText={setName} className="h-11" />
                             </View>
-                            <View className="flex-row gap-3">
-                                <View className="flex-1 gap-1.5">
-                                    <Label nativeID="sku">SKU *</Label>
-                                    <Input id="sku" value={sku} onChangeText={setSku} autoCapitalize="characters" className="h-11" />
-                                </View>
-                                <View className="flex-1 gap-1.5">
-                                    <Label nativeID="barcode">Barcode</Label>
-                                    <Input id="barcode" value={barcode} onChangeText={setBarcode} keyboardType="numeric" className="h-11" />
-                                </View>
+                            <View className="gap-1.5">
+                                <Label nativeID="sku">SKU</Label>
+                                <Input id="sku" value={sku} onChangeText={setSku} autoCapitalize="characters" className="h-11" />
                             </View>
                         </View>
 
@@ -327,7 +365,7 @@ export default function EditProductScreen() {
                     </ScrollView>
 
                     <View className="px-4 py-3 bg-card border-t border-border" style={{ paddingBottom: insets.bottom + 12 }}>
-                        <Button onPress={handleSubmit} disabled={isPending} className="h-12 w-full">
+                        <Button onPress={handleSubmit} disabled={isPending || imageUploading} className="h-12 w-full">
                             <Text className="text-primary-foreground font-bold text-base">
                                 {isPending ? "Saving..." : "Save Changes"}
                             </Text>

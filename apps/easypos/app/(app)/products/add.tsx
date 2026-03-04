@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { View, ScrollView, Pressable } from "react-native";
-import { router } from "expo-router";
+import { View, ScrollView, Pressable, Image, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -10,15 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { BackButton } from "@/components/back-button";
 import { useApiQuery, useApiPost } from "@/hooks/use-api";
 import { toast } from "@/lib/toast";
+import { pickAndUploadSquareImage } from "@/lib/upload";
 import type { Category, Tag } from "@easypos/types";
 import { cn } from "@/lib/utils";
+import { BRAND } from "@/lib/theme";
 
 interface Field {
     name: string;
-    sku: string;
-    barcode: string;
     price: string;
     cost: string;
 }
@@ -27,8 +27,6 @@ export default function AddProductScreen() {
     const insets = useSafeAreaInsets();
     const [fields, setFields] = useState<Field>({
         name: "",
-        sku: "",
-        barcode: "",
         price: "",
         cost: "",
     });
@@ -36,6 +34,9 @@ export default function AddProductScreen() {
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [isActive, setIsActive] = useState(true);
     const [newTagName, setNewTagName] = useState("");
+    const [imageUri, setImageUri] = useState<string | null>(null);
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [imageUploading, setImageUploading] = useState(false);
 
     const { data: categoriesData } = useApiQuery<{ items: Category[] }>({
         queryKey: ["categories"],
@@ -75,15 +76,25 @@ export default function AddProductScreen() {
         return (value: string) => setFields((prev) => ({ ...prev, [key]: value }));
     }
 
+    async function handlePickImage() {
+        try {
+            setImageUploading(true);
+            const url = await pickAndUploadSquareImage("products");
+            if (url) {
+                setImageUrl(url);
+                setImageUri(url);
+            }
+        } catch (e: any) {
+            toast.error("Image Upload Failed", e.message ?? "Could not upload image.");
+        } finally {
+            setImageUploading(false);
+        }
+    }
+
     function handleSubmit() {
         if (!fields.name.trim()) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
             toast.warning("Missing Field", "Product name is required.");
-            return;
-        }
-        if (!fields.sku.trim()) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-            toast.warning("Missing Field", "SKU is required.");
             return;
         }
         const price = parseFloat(fields.price);
@@ -95,18 +106,17 @@ export default function AddProductScreen() {
 
         const body: any = {
             name: fields.name.trim(),
-            sku: fields.sku.trim(),
             price,
             isActive,
         };
 
-        if (fields.barcode.trim()) body.barcode = fields.barcode.trim();
         if (fields.cost.trim()) {
             const cost = parseFloat(fields.cost);
-            if (!isNaN(cost) && cost > 0) body.cost = cost;
+            if (!isNaN(cost) && cost >= 0) body.cost = cost;
         }
         if (selectedCategory) body.categoryId = selectedCategory;
         if (selectedTags.length > 0) body.tagIds = selectedTags;
+        if (imageUrl) body.imageUrl = imageUrl;
 
         createProduct(body);
     }
@@ -117,9 +127,7 @@ export default function AddProductScreen() {
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             {/* Header */}
             <View className="flex-row items-center px-4 h-14 border-b border-border bg-card">
-                <Pressable onPress={() => router.back()} className="mr-3">
-                    <Ionicons name="close" size={24} color="hsl(0 0% 63.9%)" />
-                </Pressable>
+                <BackButton />
                 <Text className="text-foreground font-semibold text-lg flex-1">Add Product</Text>
                 <Pressable onPress={handleSubmit} disabled={isPending}>
                     <Text className={cn("font-semibold text-sm", isPending ? "text-muted-foreground" : "text-primary")}>
@@ -129,6 +137,31 @@ export default function AddProductScreen() {
             </View>
 
             <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 40 }}>
+                {/* Product Image */}
+                <View className="items-center mt-6 mb-2">
+                    <Pressable
+                        onPress={handlePickImage}
+                        disabled={imageUploading}
+                        className="w-32 h-32 rounded-2xl bg-secondary border-2 border-dashed border-border items-center justify-center overflow-hidden"
+                    >
+                        {imageUploading ? (
+                            <ActivityIndicator color={BRAND.brand} />
+                        ) : imageUri ? (
+                            <Image source={{ uri: imageUri }} className="w-full h-full" resizeMode="cover" />
+                        ) : (
+                            <View className="items-center gap-1">
+                                <Ionicons name="camera-outline" size={28} color="hsl(0 0% 45%)" />
+                                <Text className="text-muted-foreground text-xs">Add Photo</Text>
+                            </View>
+                        )}
+                    </Pressable>
+                    {imageUri && !imageUploading && (
+                        <Pressable onPress={handlePickImage} className="mt-2">
+                            <Text className="text-primary text-xs font-medium">Change Photo</Text>
+                        </Pressable>
+                    )}
+                </View>
+
                 {/* Basic info */}
                 <Text className="text-muted-foreground text-xs uppercase tracking-wider mt-5 mb-3">
                     Basic Info
@@ -143,30 +176,6 @@ export default function AddProductScreen() {
                             onChangeText={set("name")}
                             className="h-11"
                         />
-                    </View>
-                    <View className="flex-row gap-3">
-                        <View className="flex-1 gap-1.5">
-                            <Label nativeID="sku">SKU *</Label>
-                            <Input
-                                id="sku"
-                                placeholder="e.g. COKE-500"
-                                value={fields.sku}
-                                onChangeText={set("sku")}
-                                autoCapitalize="characters"
-                                className="h-11"
-                            />
-                        </View>
-                        <View className="flex-1 gap-1.5">
-                            <Label nativeID="barcode">Barcode</Label>
-                            <Input
-                                id="barcode"
-                                placeholder="Optional"
-                                value={fields.barcode}
-                                onChangeText={set("barcode")}
-                                keyboardType="numeric"
-                                className="h-11"
-                            />
-                        </View>
                     </View>
                 </View>
 
@@ -200,6 +209,9 @@ export default function AddProductScreen() {
                         />
                     </View>
                 </View>
+                <Text className="text-muted-foreground text-xs mt-2">
+                    Leave cost blank if unknown — that product won&apos;t be included in profit calculations.
+                </Text>
 
                 <Separator className="my-5" />
 
@@ -316,7 +328,7 @@ export default function AddProductScreen() {
 
             {/* Save button */}
             <View className="px-4 py-3 bg-card border-t border-border" style={{ paddingBottom: insets.bottom + 12 }}>
-                <Button onPress={handleSubmit} disabled={isPending} className="h-12 w-full">
+                <Button onPress={handleSubmit} disabled={isPending || imageUploading} className="h-12 w-full">
                     <Text className="text-primary-foreground font-bold text-base">
                         {isPending ? "Saving..." : "Add Product"}
                     </Text>

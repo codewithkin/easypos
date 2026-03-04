@@ -5,7 +5,7 @@ import {
   updateProductRequestSchema,
   paginationQuerySchema,
 } from "@easypos/types";
-import { getPaginationMeta, getPaginationSkip } from "@easypos/utils";
+import { getPaginationMeta, getPaginationSkip, generateSku } from "@easypos/utils";
 import { zBody, zQuery } from "../lib/validate.js";
 import type { Env } from "../lib/context.js";
 import { authMiddleware } from "../middleware/auth.js";
@@ -28,7 +28,6 @@ const products = new Hono<Env>()
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { sku: { contains: search, mode: "insensitive" } },
-        { barcode: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -77,16 +76,20 @@ const products = new Hono<Env>()
       return c.json({ error: productCheck.reason }, 403);
     }
 
-    const existingSku = await db.product.findFirst({
-      where: { sku: data.sku, orgId },
-    });
-    if (existingSku) return c.json({ error: "SKU already exists" }, 409);
+    // Auto-generate a unique SKU
+    let sku = generateSku(data.name);
+    let skuAttempts = 0;
+    while (await db.product.findFirst({ where: { sku, orgId } })) {
+      sku = generateSku(data.name);
+      if (++skuAttempts > 10) sku = `PROD-${Date.now().toString(36).toUpperCase()}`;
+    }
 
     const { tagIds, ...productData } = data as any;
 
     const product = await db.product.create({
       data: {
         ...productData,
+        sku,
         orgId,
         ...(tagIds?.length && {
           tags: { create: tagIds.map((tagId: string) => ({ tagId })) },
@@ -115,7 +118,7 @@ const products = new Hono<Env>()
 
     if (data.sku && data.sku !== existing.sku) {
       const skuTaken = await db.product.findFirst({ where: { sku: data.sku, orgId } });
-      if (skuTaken) return c.json({ error: "SKU already exists" }, 409);
+      if (skuTaken) return c.json({ error: "SKU already in use by another product" }, 409);
     }
 
     const { tagIds, ...updateData } = data as any;

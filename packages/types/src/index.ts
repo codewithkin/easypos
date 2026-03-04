@@ -246,17 +246,19 @@ export type CreateCategoryRequest = z.infer<typeof createCategoryRequestSchema>;
 
 export const createProductRequestSchema = z.object({
   name: z.string().min(1),
-  sku: z.string().min(1),
-  barcode: z.string().optional(),
+  imageUrl: z.string().url().optional(),
   price: z.number().positive(),
-  cost: z.number().positive().optional(),
+  cost: z.number().nonnegative().optional(),
   categoryId: z.string().optional(),
   isActive: z.boolean().optional(),
   tagIds: z.array(z.string()).optional(),
 });
 export type CreateProductRequest = z.infer<typeof createProductRequestSchema>;
 
-export const updateProductRequestSchema = createProductRequestSchema.partial();
+// On update, sku is editable; image, cost, etc. are optional
+export const updateProductRequestSchema = createProductRequestSchema.extend({
+  sku: z.string().min(1).optional(),
+}).partial();
 export type UpdateProductRequest = z.infer<typeof updateProductRequestSchema>;
 
 export const createSaleRequestSchema = z.object({

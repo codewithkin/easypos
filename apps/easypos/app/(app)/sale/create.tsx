@@ -23,6 +23,7 @@ import { formatCurrency } from "@easypos/utils";
 import type { Product, Category } from "@easypos/types";
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/theme";
+import { BackButton } from "@/components/back-button";
 
 interface CartItem {
     product: Product;
@@ -204,9 +205,7 @@ export default function CreateSaleScreen() {
             <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
                 {/* Header */}
                 <View className="flex-row items-center px-5 h-14 border-b border-border bg-card">
-                    <Pressable onPress={() => router.back()} className="mr-3">
-                        <Ionicons name="arrow-back" size={24} color={BRAND.dark} />
-                    </Pressable>
+                    <BackButton />
                     <Text className="text-foreground font-bold text-lg flex-1">New Sale</Text>
                 </View>
 
@@ -348,9 +347,7 @@ export default function CreateSaleScreen() {
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             {/* Header */}
             <View className="flex-row items-center px-4 h-14 border-b border-border bg-card">
-                <Pressable onPress={() => router.back()} className="mr-3">
-                    <Ionicons name="arrow-back" size={24} color={BRAND.dark} />
-                </Pressable>
+                <BackButton />
                 <Text className="text-foreground font-bold text-lg flex-1">New Sale</Text>
                 {cart.length > 0 && (
                     <Pressable

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useApiPost } from "@/hooks/use-api";
 import { toast } from "@/lib/toast";
 import { BRAND } from "@/lib/theme";
+import { BackButton } from "@/components/back-button";
 
 interface CreateCustomerResponse {
     id: string;
@@ -70,9 +71,7 @@ export default function CreateCustomerScreen() {
         >
             {/* Header */}
             <View className="flex-row items-center px-4 h-14 border-b border-border bg-card">
-                <Pressable onPress={() => router.back()} className="mr-3">
-                    <Ionicons name="arrow-back" size={24} color={BRAND.dark} />
-                </Pressable>
+                <BackButton />
                 <Text className="text-foreground font-bold text-lg flex-1">Add Customer</Text>
             </View>
 

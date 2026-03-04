@@ -17,6 +17,7 @@ import { toast } from "@/lib/toast";
 import type { Sale } from "@easypos/types";
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/theme";
+import { BackButton } from "@/components/back-button";
 
 interface CustomerDetail {
     id: string;
@@ -59,9 +60,7 @@ export default function CustomerDetailScreen() {
         return (
             <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
                 <View className="flex-row items-center px-4 h-14 border-b border-border bg-card">
-                    <Pressable onPress={() => router.back()} className="mr-3">
-                        <Ionicons name="arrow-back" size={24} color={BRAND.dark} />
-                    </Pressable>
+                    <BackButton />
                     <Skeleton className="h-6 w-40" />
                 </View>
                 <View className="px-4 py-6 gap-4">
@@ -126,9 +125,7 @@ export default function CustomerDetailScreen() {
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             {/* Header */}
             <View className="flex-row items-center px-4 h-14 border-b border-border bg-card">
-                <Pressable onPress={() => router.back()} className="mr-3">
-                    <Ionicons name="arrow-back" size={24} color={BRAND.dark} />
-                </Pressable>
+                <BackButton />
                 <Text className="text-foreground font-bold text-lg flex-1">Customer</Text>
                 <Pressable onPress={() => setShowDeleteDialog(true)}>
                     <Ionicons name="trash-outline" size={20} color={BRAND.red} />

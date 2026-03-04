@@ -1,6 +1,7 @@
 import { View, Pressable } from "react-native";
 import { router, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { BackButton } from "@/components/back-button";
 
 import { Text } from "@/components/ui/text";
 import { Progress } from "@/components/ui/progress";
@@ -43,9 +44,7 @@ export default function UsageScreen() {
                     headerShown: true,
                     title: "Usage & Limits",
                     headerLeft: () => (
-                        <Pressable onPress={() => router.back()} className="mr-4">
-                            <Ionicons name="arrow-back" size={24} color="hsl(0 0% 45%)" />
-                        </Pressable>
+                        <BackButton />
                     ),
                 }}
             />
