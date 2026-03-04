@@ -56,7 +56,7 @@ export default function DashboardScreen() {
     const totalSales = salesData?.total ?? 0;
     const revenueCount = completedRevenueSales.length;
     const avgSale = revenueCount > 0 ? todayRevenue / revenueCount : 0;
-    const recentSales = sales.slice(0, 5);
+    const recentSales = sales && sales.length > 0 ? sales.slice(0, 5) : [];
 
     const stats = [
         {

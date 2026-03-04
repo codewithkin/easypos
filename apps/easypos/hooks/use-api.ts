@@ -49,8 +49,8 @@ export function useApiPaginatedQuery<T>(options: {
   });
 
   // Flatten all pages into a single items array
-  const items = query.data?.pages.flatMap((p) => p.items) ?? [];
-  const total = query.data?.pages[0]?.total ?? 0;
+  const items = query.data?.pages?.flatMap((p) => p.items) ?? [];
+  const total = query.data?.pages?.[0]?.total ?? 0;
 
   return {
     ...query,
