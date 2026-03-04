@@ -53,13 +53,19 @@ async function uploadLogoToR2(imageUri: string): Promise<string> {
     );
 
     try {
-        // 2. Read image file using expo-file-system's new File API
+        // 2. Read image file as base64 using expo-file-system's new File API
         const file = new File(imageUri);
-        const bytes = await file.bytes();
-        const blob = new Blob([bytes], { type: "image/jpeg" });
+        const base64Data = await file.base64();
 
-        // 3. Upload blob to R2 presigned URL using centralized http client
-        const uploadResponse = await http.put(uploadUrl, blob, {
+        // 3. Convert base64 to binary bytes for upload
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        // 4. Upload bytes to R2 presigned URL using centralized http client
+        const uploadResponse = await http.put(uploadUrl, bytes, {
             headers: { "Content-Type": "image/jpeg" },
             withCredentials: false,
         });
