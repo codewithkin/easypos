@@ -297,8 +297,9 @@ export type ApiErrorResponse = z.infer<typeof apiErrorSchema>;
 
 export const paginationQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional().default(1),
-  pageSize: z.coerce.number().int().positive().max(100).optional().default(20),
+  pageSize: z.coerce.number().int().positive().max(200).optional().default(20),
   search: z.string().optional(),
+  active: z.coerce.boolean().optional(),
 });
 export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
 

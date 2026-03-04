@@ -18,9 +18,12 @@ const products = new Hono<Env>()
   // ── List products (paginated) ─────────────────────────────────
   .get("/", zQuery(paginationQuerySchema), async (c) => {
     const orgId = c.get("orgId");
-    const { page, pageSize, search } = c.req.valid("query");
+    const { page, pageSize, search, active } = c.req.valid("query");
 
     const where: any = { orgId };
+    if (active !== undefined) {
+      where.isActive = active;
+    }
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
