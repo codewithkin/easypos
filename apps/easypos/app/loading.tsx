@@ -80,7 +80,7 @@ export default function LoadingScreen() {
     const d3Style = useAnimatedStyle(() => ({ opacity: dot3.value }));
 
     return (
-        <View className="flex-1 items-center justify-center bg-[#2D313F]">
+        <View className="flex-1 items-center justify-center bg-background">
             {/* Logo block */}
             <Animated.View
                 entering={FadeInDown.duration(500).springify()}
@@ -88,24 +88,24 @@ export default function LoadingScreen() {
                 className="items-center mb-16"
             >
                 {/* Icon badge */}
-                <View className="w-24 h-24 rounded-3xl bg-[#00B25A] items-center justify-center mb-6 shadow-2xl">
+                <View className="w-24 h-24 rounded-3xl bg-primary items-center justify-center mb-6 shadow-2xl">
                     <Text className="text-5xl">🏪</Text>
                 </View>
 
                 {/* Wordmark */}
-                <Text className="text-4xl font-bold text-white tracking-tight mb-1">
+                <Text className="text-4xl font-bold text-foreground tracking-tight mb-1">
                     EasyPOS
                 </Text>
-                <Text className="text-xs text-[#B4BEC5] tracking-[4px] uppercase">
+                <Text className="text-xs text-muted-foreground tracking-[4px] uppercase">
                     Point of Sale
                 </Text>
             </Animated.View>
 
             {/* Loading dots */}
             <Animated.View entering={FadeIn.delay(300).duration(400)} className="flex-row gap-2">
-                <Animated.View style={d1Style} className="w-2 h-2 rounded-full bg-[#00B25A]" />
-                <Animated.View style={d2Style} className="w-2 h-2 rounded-full bg-[#00B25A]" />
-                <Animated.View style={d3Style} className="w-2 h-2 rounded-full bg-[#00B25A]" />
+                <Animated.View style={d1Style} className="w-2 h-2 rounded-full bg-primary" />
+                <Animated.View style={d2Style} className="w-2 h-2 rounded-full bg-primary" />
+                <Animated.View style={d3Style} className="w-2 h-2 rounded-full bg-primary" />
             </Animated.View>
         </View>
     );
