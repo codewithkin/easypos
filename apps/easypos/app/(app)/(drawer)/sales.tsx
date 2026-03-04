@@ -50,16 +50,27 @@ export default function SalesScreen() {
         items: sales,
         total: salesTotal,
         isLoading,
+        isError,
+        error,
         refetch,
         isRefetching,
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
+        data: rawQueryData,
     } = useApiPaginatedQuery<SaleWithDetails>({
-        queryKey: ["sales", period],
+        // Use "sales-list" namespace to avoid key collision with dashboard's useApiQuery(["sales","today"])
+        queryKey: ["sales-list", period],
         path: `/sales?period=${period}`,
         pageSize: 10,
     });
+
+    // Verbose logging for debugging
+    console.log("[SalesScreen] period:", period);
+    console.log("[SalesScreen] isLoading:", isLoading, "isError:", isError);
+    console.log("[SalesScreen] rawQueryData pages:", rawQueryData?.pages?.length ?? "no data");
+    console.log("[SalesScreen] sales count:", sales?.length ?? "undefined");
+    if (isError) console.error("[SalesScreen] query error:", error);
 
     //  Computed stats 
     const stats = useMemo(() => {
