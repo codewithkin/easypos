@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./auth-storage";
+import { router } from "expo-router";
 
 const BASE_URL = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
@@ -78,6 +79,14 @@ apiClient.interceptors.response.use(
         original.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(original);
       }
+
+      // Refresh failed → session expired, force sign-out
+      await clearTokens();
+      // Dynamically import auth store to avoid circular deps
+      const { useAuthStore } = await import("@/store/auth");
+      useAuthStore.setState({ user: null, isAuthenticated: false });
+      try { router.replace("/(auth)/login"); } catch { /* navigation not ready */ }
+      throw new ApiError(401, "Session expired. Please sign in again.");
     }
 
     const status = error.response?.status ?? 0;
