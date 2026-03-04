@@ -63,6 +63,17 @@ export default function SalesScreen() {
 
     //  Computed stats 
     const stats = useMemo(() => {
+        if (!sales || sales.length === 0) {
+            return {
+                salesCount: 0,
+                totalItems: 0,
+                totalRevenue: 0,
+                totalCredit: 0,
+                avgValue: 0,
+                creditCount: 0,
+            };
+        }
+
         const completed = sales.filter((s) => s.status === "COMPLETED");
         const revenue = completed.filter((s) => s.paymentMethod !== "CREDIT");
         const credit = completed.filter((s) => s.paymentMethod === "CREDIT");
@@ -294,7 +305,7 @@ export default function SalesScreen() {
                         <Skeleton key={i} className="h-16 rounded-xl" />
                     ))}
                 </View>
-            ) : sales.length === 0 ? (
+            ) : !sales || sales.length === 0 ? (
                 <View className="flex-1 items-center justify-center">
                     <Ionicons name="receipt-outline" size={48} color={BRAND.mid} />
                     <Text className="text-muted-foreground mt-3 text-base">
