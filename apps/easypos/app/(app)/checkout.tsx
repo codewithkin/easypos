@@ -46,6 +46,7 @@ export default function CheckoutScreen() {
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
     const [amountTendered, setAmountTendered] = useState("");
     const [discount, setDiscount] = useState("");
+    const [note, setNote] = useState("");
 
     const cartItems: CartItem[] = params.cart ? JSON.parse(params.cart) : [];
 
@@ -58,6 +59,7 @@ export default function CheckoutScreen() {
         paymentMethod: PaymentMethod;
         discount?: number;
         amountTendered?: number;
+        note?: string;
     }>({
         path: "/sales",
         invalidateKeys: [["sales"], ["reports"]],
@@ -87,6 +89,10 @@ export default function CheckoutScreen() {
 
         if (paymentMethod === "CASH" && amountTendered) {
             body.amountTendered = parseFloat(amountTendered);
+        }
+
+        if (note.trim()) {
+            body.note = note.trim();
         }
 
         createSale(body);
@@ -237,6 +243,22 @@ export default function CheckoutScreen() {
                         )}
                     </View>
                 )}
+
+                {/* ── Sale Note (optional) ── */}
+                <View className="mt-5">
+                    <Text className="text-muted-foreground text-xs uppercase tracking-wider mb-2">
+                        Note (optional)
+                    </Text>
+                    <Input
+                        placeholder="Add a note to this sale..."
+                        value={note}
+                        onChangeText={setNote}
+                        multiline
+                        numberOfLines={2}
+                        className="h-20 bg-card"
+                        style={{ textAlignVertical: "top", paddingTop: 12 }}
+                    />
+                </View>
             </ScrollView>
 
             {/* ── Complete button ── */}

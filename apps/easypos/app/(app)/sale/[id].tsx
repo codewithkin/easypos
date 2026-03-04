@@ -247,6 +247,17 @@ export default function SaleDetailScreen() {
                             <Text className="text-foreground text-sm">{sale.cashier.name}</Text>
                         </View>
                     </View>
+
+                    {/* Note */}
+                    {sale.note && (
+                        <>
+                            <Separator className="mt-3" />
+                            <View className="pt-3">
+                                <Text className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Note</Text>
+                                <Text className="text-foreground text-sm">{sale.note}</Text>
+                            </View>
+                        </>
+                    )}
                 </View>
             </ScrollView>
 
