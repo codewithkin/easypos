@@ -163,7 +163,7 @@ export default function RegisterScreen() {
                 {/* Header */}
                 <View className="items-center mb-8">
                     <Text className="text-2xl font-bold text-foreground tracking-tight">
-                        Create Your Business
+                        Create Your Store
                     </Text>
                     <Text className="text-muted-foreground text-sm mt-1">
                         Set up your POS in under a minute
@@ -173,7 +173,7 @@ export default function RegisterScreen() {
                 {/* ── Business Logo ── */}
                 <View className="items-center mb-6">
                     <Text className="text-foreground font-medium text-sm mb-3 self-start">
-                        Business Logo <Text className="text-muted-foreground font-normal">(optional)</Text>
+                        Store Logo <Text className="text-muted-foreground font-normal">(optional)</Text>
                     </Text>
 
                     <Pressable
@@ -217,9 +217,9 @@ export default function RegisterScreen() {
                 {/* Form */}
                 <View className="gap-4">
                     <View className="gap-1.5">
-                        <Label nativeID="orgName" className="text-foreground">Business Name</Label>
+                        <Label nativeID="orgName" className="text-foreground">Store Name</Label>
                         <Input
-                            placeholder="My Shop"
+                            placeholder="My Store"
                             value={orgName}
                             onChangeText={setOrgName}
                             autoCapitalize="words"

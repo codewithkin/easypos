@@ -38,7 +38,7 @@ export default function PaymentFailureScreen() {
                         variant="outline"
                         className="mt-3 w-full"
                         size="lg"
-                        onPress={() => router.replace("/(app)/(tabs)" as any)}
+                        onPress={() => router.replace("/(app)" as any)}
                     >
                         <Text className="text-foreground font-semibold">
                             Back to App

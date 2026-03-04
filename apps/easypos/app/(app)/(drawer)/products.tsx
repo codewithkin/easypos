@@ -1,35 +1,34 @@
 import { useState, useMemo } from "react";
-import {
-    View,
-    FlatList,
-    Pressable,
-    TextInput,
-    RefreshControl,
-} from "react-native";
+import { View, FlatList, Pressable, TextInput, RefreshControl, useWindowDimensions } from "react-native";
 import { router } from "expo-router";
+import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useAuthStore } from "@/store/auth";
-import { useApiQuery, useApiDelete } from "@/hooks/use-api";
-import { toast } from "@/lib/toast";
+import { useRole } from "@/hooks/use-role";
+import { useApiQuery } from "@/hooks/use-api";
 import { formatCurrency } from "@easypos/utils";
 import type { Product, Category } from "@easypos/types";
 import { cn } from "@/lib/utils";
+import { BRAND } from "@/lib/theme";
 
 type ProductWithCategory = Product & { category?: { id: string; name: string } | null };
 
-export default function ManageProductsScreen() {
+export default function ProductsScreen() {
     const insets = useSafeAreaInsets();
+    const navigation = useNavigation();
+    const { width } = useWindowDimensions();
+    const isTablet = width >= 768;
     const user = useAuthStore((s) => s.user);
+    const { canManage } = useRole();
     const [search, setSearch] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-    const [deleteTarget, setDeleteTarget] = useState<ProductWithCategory | null>(null);
 
     const { data: productsData, isLoading, refetch, isRefetching } = useApiQuery<{
         items: ProductWithCategory[];
@@ -42,13 +41,6 @@ export default function ManageProductsScreen() {
     const { data: categoriesData } = useApiQuery<{ items: Category[] }>({
         queryKey: ["categories"],
         path: "/categories",
-    });
-
-    const { mutate: deleteProduct, isPending: isDeleting } = useApiDelete<{ message: string }>({
-        path: "",
-        invalidateKeys: [["products"]],
-        onSuccess: () => toast.success("Product deleted"),
-        onError: (err) => toast.error(err.message),
     });
 
     const products = productsData?.items ?? [];
@@ -69,15 +61,13 @@ export default function ManageProductsScreen() {
         });
     }, [products, search, selectedCategory]);
 
-    function confirmDelete(product: ProductWithCategory) {
-        setDeleteTarget(product);
-    }
+    const activeCount = products.filter((p) => p.isActive).length;
 
     function renderProduct({ item }: { item: ProductWithCategory }) {
         return (
             <Pressable
                 onPress={() => router.push(`/(app)/products/${item.id}`)}
-                className="px-4 py-3.5 active:bg-secondary"
+                className="px-5 py-3.5 active:bg-secondary"
             >
                 <View className="flex-row items-center justify-between">
                     <View className="flex-1 mr-3">
@@ -89,7 +79,7 @@ export default function ManageProductsScreen() {
                                 </Badge>
                             )}
                         </View>
-                        <View className="flex-row items-center gap-2 mt-0.5">
+                        <View className="flex-row items-center gap-1.5 mt-0.5">
                             <Text className="text-muted-foreground text-xs">SKU: {item.sku}</Text>
                             {item.category && (
                                 <>
@@ -99,7 +89,7 @@ export default function ManageProductsScreen() {
                             )}
                         </View>
                     </View>
-                    <View className="items-end gap-1">
+                    <View className="items-end gap-0.5">
                         <Text className="text-foreground font-bold text-sm">
                             {formatCurrency(item.price, user?.org.currency)}
                         </Text>
@@ -116,41 +106,48 @@ export default function ManageProductsScreen() {
 
     return (
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-            {/* Header */}
-            <View className="px-4 pt-2 pb-3">
+            {/* ── Header ── */}
+            <View className="px-5 pt-2 pb-3">
                 <View className="flex-row items-center justify-between mb-3">
                     <View className="flex-row items-center gap-3">
-                        <Pressable onPress={() => router.back()}>
-                            <Ionicons name="arrow-back" size={24} color="hsl(0 0% 63.9%)" />
-                        </Pressable>
+                        {!isTablet && (
+                            <Pressable
+                                onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+                                className="w-10 h-10 rounded-xl bg-secondary items-center justify-center"
+                            >
+                                <Ionicons name="menu" size={22} color={BRAND.darkest} />
+                            </Pressable>
+                        )}
                         <View>
                             <Text className="text-2xl font-bold text-foreground">Products</Text>
                             <Text className="text-muted-foreground text-xs">
-                                {productsData?.total ?? 0} items in catalogue
+                                {activeCount} active · {productsData?.total ?? 0} total
                             </Text>
                         </View>
                     </View>
-                    <Pressable
-                        onPress={() => router.push("/(app)/products/add")}
-                        className="bg-primary w-10 h-10 rounded-xl items-center justify-center"
-                    >
-                        <Ionicons name="add" size={22} color="hsl(0 0% 98%)" />
-                    </Pressable>
+                    {canManage && (
+                        <Pressable
+                            onPress={() => router.push("/(app)/products/add")}
+                            className="bg-primary w-10 h-10 rounded-xl items-center justify-center"
+                        >
+                            <Ionicons name="add" size={22} color="hsl(0 0% 98%)" />
+                        </Pressable>
+                    )}
                 </View>
 
                 {/* Search */}
-                <View className="flex-row items-center bg-secondary rounded-lg px-3 h-11">
-                    <Ionicons name="search" size={18} color="hsl(0 0% 45%)" />
+                <View className="flex-row items-center bg-card border border-border rounded-xl px-3 h-11">
+                    <Ionicons name="search" size={18} color={BRAND.dark} />
                     <TextInput
                         placeholder="Search by name, SKU, or barcode..."
-                        placeholderTextColor="hsl(0 0% 45%)"
+                        placeholderTextColor={BRAND.dark}
                         value={search}
                         onChangeText={setSearch}
                         className="flex-1 ml-2 text-foreground text-sm"
                     />
                     {search.length > 0 && (
                         <Pressable onPress={() => setSearch("")}>
-                            <Ionicons name="close-circle" size={18} color="hsl(0 0% 45%)" />
+                            <Ionicons name="close-circle" size={18} color={BRAND.dark} />
                         </Pressable>
                     )}
                 </View>
@@ -170,15 +167,13 @@ export default function ManageProductsScreen() {
                                     "px-4 py-1.5 rounded-full mr-2 border",
                                     selectedCategory === item.id
                                         ? "bg-primary border-primary"
-                                        : "bg-secondary border-border",
+                                        : "bg-card border-border",
                                 )}
                             >
-                                <Text
-                                    className={cn(
-                                        "text-sm font-medium",
-                                        selectedCategory === item.id ? "text-primary-foreground" : "text-foreground",
-                                    )}
-                                >
+                                <Text className={cn(
+                                    "text-sm font-medium",
+                                    selectedCategory === item.id ? "text-primary-foreground" : "text-foreground",
+                                )}>
                                     {item.name}
                                 </Text>
                             </Pressable>
@@ -187,53 +182,36 @@ export default function ManageProductsScreen() {
                 )}
             </View>
 
-            {/* List */}
+            {/* ── Product List ── */}
             {isLoading ? (
-                <View className="px-4 gap-3">
+                <View className="px-5 gap-3">
                     {Array.from({ length: 6 }).map((_, i) => (
-                        <Skeleton key={i} className="h-16 rounded-lg" />
+                        <Skeleton key={i} className="h-16 rounded-xl" />
                     ))}
                 </View>
             ) : filtered.length === 0 ? (
                 <View className="flex-1 items-center justify-center">
-                    <Ionicons name="cube-outline" size={48} color="hsl(0 0% 45%)" />
+                    <Ionicons name="cube-outline" size={48} color={BRAND.mid} />
                     <Text className="text-muted-foreground mt-3 text-base">No products found</Text>
-                    <Pressable
-                        onPress={() => router.push("/(app)/products/add")}
-                        className="mt-4 flex-row items-center gap-2 bg-primary px-5 py-2.5 rounded-xl"
-                    >
-                        <Ionicons name="add" size={18} color="hsl(0 0% 98%)" />
-                        <Text className="text-primary-foreground font-semibold text-sm">Add Product</Text>
-                    </Pressable>
+                    {canManage && (
+                        <Button
+                            onPress={() => router.push("/(app)/products/add")}
+                            className="mt-4 h-10 px-6"
+                        >
+                            <Text className="text-primary-foreground font-semibold text-sm">Add Product</Text>
+                        </Button>
+                    )}
                 </View>
             ) : (
                 <FlatList
                     data={filtered}
                     keyExtractor={(item) => item.id}
                     renderItem={renderProduct}
-                    ItemSeparatorComponent={() => <Separator className="ml-4" />}
-                    refreshControl={
-                        <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-                    }
+                    ItemSeparatorComponent={() => <Separator className="ml-5" />}
+                    refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
                     contentContainerStyle={{ paddingBottom: 40 }}
                 />
             )}
-
-            <ConfirmDialog
-                open={deleteTarget !== null}
-                onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-                title="Delete Product"
-                description={`Remove "${deleteTarget?.name}" from the catalogue? This cannot be undone.`}
-                confirmText="Delete"
-                destructive
-                isLoading={isDeleting}
-                onConfirm={() => {
-                    if (deleteTarget) {
-                        deleteProduct(undefined);
-                        setDeleteTarget(null);
-                    }
-                }}
-            />
         </View>
     );
 }

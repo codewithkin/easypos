@@ -75,7 +75,7 @@ export default function PaymentSuccessScreen() {
                             <Button
                                 className="mt-8 w-full"
                                 size="lg"
-                                onPress={() => router.replace("/(app)/(tabs)" as any)}
+                                onPress={() => router.replace("/(app)" as any)}
                             >
                                 <Text className="text-primary-foreground font-semibold">
                                     Continue to App
@@ -108,7 +108,7 @@ export default function PaymentSuccessScreen() {
                                 variant="outline"
                                 className="mt-3 w-full"
                                 size="lg"
-                                onPress={() => router.replace("/(app)/(tabs)" as any)}
+                                onPress={() => router.replace("/(app)" as any)}
                             >
                                 <Text className="text-foreground font-semibold">
                                     Back to App

@@ -10,17 +10,18 @@ export default function AppLayout() {
 
     return (
         <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
-            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="(drawer)" />
             <Stack.Screen name="checkout" options={{ presentation: "modal" }} />
+            <Stack.Screen name="sale/create" />
             <Stack.Screen name="sale/[id]" />
-            <Stack.Screen name="products" />
             <Stack.Screen name="products/add" />
             <Stack.Screen name="products/[id]" />
+            <Stack.Screen name="customers/create" />
+            <Stack.Screen name="customers/[id]" />
             <Stack.Screen name="team" />
             <Stack.Screen name="team/invite" />
             <Stack.Screen name="billing/plans" />
             <Stack.Screen name="billing/usage" />
-            <Stack.Screen name="settings" />
         </Stack>
     );
 }

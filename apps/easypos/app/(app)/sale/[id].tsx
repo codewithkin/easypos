@@ -65,7 +65,7 @@ export default function SaleDetailScreen() {
 
     function handleNewSale() {
         router.dismissAll();
-        router.replace("/(app)/(tabs)");
+        router.replace("/(app)/sale/create");
     }
 
     if (isLoading) {
