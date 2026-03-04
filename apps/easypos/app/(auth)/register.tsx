@@ -155,9 +155,10 @@ export default function RegisterScreen() {
             style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
         >
             <ScrollView
-                contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+                contentContainerStyle={{ paddingVertical: 24, minHeight: "100%" }}
                 keyboardShouldPersistTaps="handled"
                 className="px-6"
+                scrollEnabled={true}
             >
                 {/* Header */}
                 <View className="items-center mb-8">
