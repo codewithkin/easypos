@@ -31,11 +31,11 @@ const PAYMENT_METHODS: {
     label: string;
     subtitle?: string;
 }[] = [
-    { value: "CASH", icon: "cash-outline", label: "Cash" },
-    { value: "MOBILE_MONEY", icon: "phone-portrait-outline", label: "Mobile Money", subtitle: "Ecocash · OneMoney" },
-    { value: "SWIPE", icon: "card-outline", label: "Swipe" },
-    { value: "CREDIT", icon: "time-outline", label: "Credit" },
-];
+        { value: "CASH", icon: "cash-outline", label: "Cash" },
+        { value: "MOBILE_MONEY", icon: "phone-portrait-outline", label: "Mobile Money", subtitle: "Ecocash · OneMoney" },
+        { value: "SWIPE", icon: "card-outline", label: "Swipe" },
+        { value: "CREDIT", icon: "time-outline", label: "Credit" },
+    ];
 
 /** Step 3 — Payment method, bill counter, discount, note */
 export function PaymentStep() {
@@ -168,22 +168,22 @@ export function PaymentStep() {
                                 change > 0
                                     ? "bg-green-50 border-green-200"
                                     : isUnderpaid
-                                    ? "bg-red-50 border-red-200"
-                                    : "bg-card border-border",
+                                        ? "bg-red-50 border-red-200"
+                                        : "bg-card border-border",
                             )}>
                                 <Text className={cn(
                                     "text-sm font-semibold",
                                     change > 0
                                         ? "text-green-700"
                                         : isUnderpaid
-                                        ? "text-red-600"
-                                        : "text-foreground",
+                                            ? "text-red-600"
+                                            : "text-foreground",
                                 )}>
                                     {change > 0
                                         ? "Change"
                                         : isUnderpaid
-                                        ? `Short by ${formatCurrency(shortfall)}`
-                                        : "Exact change"}
+                                            ? `Short by ${formatCurrency(shortfall)}`
+                                            : "Exact change"}
                                 </Text>
                                 {change > 0 && (
                                     <Text className="text-green-700 font-bold text-base">
