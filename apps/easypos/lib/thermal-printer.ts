@@ -351,48 +351,75 @@ export async function printReceiptBLE(
         );
     }
 
-    // Scan for devices
-    const device = await new Promise<Device>((resolve, reject) => {
-        const timer = setTimeout(() => {
-            manager.stopDeviceScan();
-            reject(
-                new PrinterError(
-                    "No printer found nearby. Make sure your printer is on and in range.",
-                    "NO_PRINTER_FOUND",
-                ),
-            );
-        }, timeoutMs);
+    // First, try to connect to known paired devices
+    // (paired devices don't need to be actively advertising)
+    let device: Device | null = null;
 
-        manager.startDeviceScan(null, { allowDuplicates: false }, (err, d) => {
-            if (err) {
-                clearTimeout(timer);
-                manager.stopDeviceScan();
-                reject(new PrinterError(err.message ?? "BLE scan error", "UNKNOWN"));
-                return;
+    try {
+        const paired = await manager.connectedDevices([]);
+        if (paired.length > 0) {
+            console.log(`[BLE] Found ${paired.length} connected devices, trying them...`);
+            for (const p of paired) {
+                const name = (p.name ?? p.localName ?? "").toLowerCase();
+                if (name.length > 0) {
+                    // Any paired device with a non-empty name is worth trying
+                    // (could be a printer; we'll validate the characteristic later)
+                    console.log(`[BLE] Trying paired device: ${p.name ?? p.localName}`);
+                    device = p;
+                    break;
+                }
             }
-            if (!d) return;
+        }
+    } catch (err) {
+        console.warn("[BLE] Could not get connected devices:", err);
+    }
 
-            // Match on name: thermal printers commonly include these keywords
-            const name = (d.name ?? d.localName ?? "").toLowerCase();
-            const isPrinter =
-                name.includes("print") ||
-                name.includes("pos") ||
-                name.includes("cashino") ||
-                name.includes("rongta") ||
-                name.includes("xprinter") ||
-                name.includes("goojprt") ||
-                name.includes("rpp") ||
-                name.includes("mtp") ||
-                name.includes("btp") ||
-                name.includes("pt-");
-
-            if (isPrinter) {
-                clearTimeout(timer);
+    // If no paired device found, scan for advertising devices
+    if (!device) {
+        console.log("[BLE] No suitable paired device found, scanning...");
+        device = await new Promise<Device>((resolve, reject) => {
+            const timer = setTimeout(() => {
                 manager.stopDeviceScan();
-                resolve(d);
-            }
+                reject(
+                    new PrinterError(
+                        "No printer found. Make sure your printer is on, paired, and in range.",
+                        "NO_PRINTER_FOUND",
+                    ),
+                );
+            }, timeoutMs);
+
+            manager.startDeviceScan(null, { allowDuplicates: false }, (err, d) => {
+                if (err) {
+                    clearTimeout(timer);
+                    manager.stopDeviceScan();
+                    reject(new PrinterError(err.message ?? "BLE scan error", "UNKNOWN"));
+                    return;
+                }
+                if (!d) return;
+
+                // Match on name: thermal printers commonly include these keywords
+                const name = (d.name ?? d.localName ?? "").toLowerCase();
+                const isPrinter =
+                    name.includes("print") ||
+                    name.includes("pos") ||
+                    name.includes("cashino") ||
+                    name.includes("rongta") ||
+                    name.includes("xprinter") ||
+                    name.includes("goojprt") ||
+                    name.includes("rpp") ||
+                    name.includes("mtp") ||
+                    name.includes("btp") ||
+                    name.includes("pt-");
+
+                if (isPrinter) {
+                    clearTimeout(timer);
+                    manager.stopDeviceScan();
+                    console.log(`[BLE] Found advertising printer: ${d.name ?? d.localName}`);
+                    resolve(d);
+                }
+            });
         });
-    });
+    }
 
     // Connect
     let connected: Device;

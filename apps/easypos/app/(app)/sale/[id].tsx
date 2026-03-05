@@ -131,7 +131,7 @@ export default function SaleDetailScreen() {
                         toast.error("Permission denied", "Grant Bluetooth access in Settings.");
                         break;
                     case "NO_PRINTER_FOUND":
-                        toast.error("Printer not found", "Make sure your printer is on and paired.");
+                        toast.error("Printer not found", "Ensure printer is on, paired via Bluetooth, and in range.");
                         break;
                     case "CONNECTION_FAILED":
                         toast.error("Connection failed", err.message);
