@@ -25,7 +25,7 @@ import { BRAND } from "@/lib/theme";
 type ProductWithCategory = Product & { category?: { id: string; name: string } | null };
 
 interface ProductsStepProps {
-    search: string;
+    search?: string;
     onSearchChange: (v: string) => void;
     selectedCategory: string | null;
     onCategoryChange: (id: string | null) => void;
@@ -33,7 +33,7 @@ interface ProductsStepProps {
 
 /** Step 1 — Product selection grid */
 export function ProductsStep({
-    search,
+    search = "",
     onSearchChange,
     selectedCategory,
     onCategoryChange,
@@ -231,10 +231,11 @@ export function ProductsStep({
 export function ProductsFooterInfo() {
     const { cart } = useSaleStore();
     const user = useAuthStore((s) => s.user);
-    const count = cartItemCount(cart);
-    const total = cartTotal(cart);
+    const cartArray = cart ?? [];
+    const count = cartItemCount(cartArray);
+    const total = cartTotal(cartArray);
 
-    if (cart.length === 0) return null;
+    if (cartArray.length === 0) return null;
 
     return (
         <View className="flex-row items-center flex-1 mr-3">
