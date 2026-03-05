@@ -195,8 +195,8 @@ export default function CreateSaleScreen() {
                                     i === step
                                         ? "w-4 h-2 bg-primary"
                                         : i < step
-                                        ? "w-2 h-2 bg-primary/40"
-                                        : "w-2 h-2 bg-border",
+                                            ? "w-2 h-2 bg-primary/40"
+                                            : "w-2 h-2 bg-border",
                                 )}
                             />
                         ))}
