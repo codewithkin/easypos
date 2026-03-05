@@ -134,135 +134,137 @@ function fmt(amount: number, currency = "$"): string {
 
 export function buildEscPosReceipt(data: ReceiptData): Uint8Array {
     const curr = data.currency ?? "$";
-    const W = 32; // 58mm printer width
-    const lines: Uint8Array[] = [];
+    const W = 32; // 58mm printer width in chars
+    const out: Uint8Array[] = [];
 
-    function push(bytes: Uint8Array) {
-        lines.push(bytes);
+    // Only ESC @ (reset) as a formatting command — everything else is plain text
+    out.push(new Uint8Array([ESC, 0x40]));
+
+    function line(s: string) {
+        // Truncate to width so we never accidentally wrap
+        out.push(strToBytes(s.slice(0, W) + "\n"));
     }
-    function text(s: string) {
-        push(strToBytes(s + "\n"));
+    function c(s: string) {
+        // Manually center a string within W chars
+        const s2 = s.slice(0, W);
+        const pad = Math.max(0, Math.floor((W - s2.length) / 2));
+        out.push(strToBytes(" ".repeat(pad) + s2 + "\n"));
     }
+    function lr(left: string, right: string) {
+        const l = left.slice(0, W - right.length - 1);
+        const gap = W - l.length - right.length;
+        out.push(strToBytes(l + " ".repeat(Math.max(1, gap)) + right + "\n"));
+    }
+    function blank() { out.push(strToBytes("\n")); }
+    function dashes() { out.push(strToBytes("-".repeat(W) + "\n")); }
+    function equals() { out.push(strToBytes("=".repeat(W) + "\n")); }
 
-    // ── Initialize ──────────────────────────────────────────────
-    push(new Uint8Array([ESC, 0x40])); // reset
+    // ── HEADER ──────────────────────────────────────────────────
+    blank();
+    c(data.orgName.toUpperCase());
+    c(data.branchName);
+    c(data.createdAt);
+    equals();
 
-    // ── STORE HEADER (centered) ─────────────────────────────────
-    push(new Uint8Array([ESC, 0x61, 0x01])); // center
-    text(center(data.orgName.toUpperCase(), W));
-    text(center(data.branchName, W));
-    text(center(data.createdAt, W));
-    text("=".repeat(W));
-
-    // ── RECEIPT # (centered) ────────────────────────────────────
-    text(center("Receipt #" + data.receiptNumber, W));
-    text("");
-
-    // ── DETAILS (left align) ────────────────────────────────────
-    push(new Uint8Array([ESC, 0x61, 0x00])); // left
-    text("Cashier: " + data.cashierName.slice(0, 20));
-
+    // ── RECEIPT INFO ────────────────────────────────────────────
+    c("Receipt #" + data.receiptNumber);
+    blank();
+    line("Cashier: " + data.cashierName.slice(0, 22));
     if (data.customerName) {
-        text("Customer: " + data.customerName.slice(0, 20));
+        line("Customer: " + data.customerName.slice(0, 21));
     }
-
-    text("-".repeat(W));
-    text("");
+    dashes();
 
     // ── ITEMS ───────────────────────────────────────────────────
     for (const item of data.items) {
-        const itemName = item.name.slice(0, W - 8);
         const amount = fmt(item.total, curr);
-        const padding = W - itemName.length - amount.length;
-        text(itemName + " ".repeat(Math.max(1, padding)) + amount);
-        
-        const qtyLine = `  ${item.qty} x ${fmt(item.unitPrice, curr)}`;
-        text(qtyLine);
+        const nameMax = W - amount.length - 1;
+        const name = item.name.slice(0, nameMax);
+        const gap = W - name.length - amount.length;
+        out.push(strToBytes(name + " ".repeat(Math.max(1, gap)) + amount + "\n"));
+        line("  " + item.qty + " x " + fmt(item.unitPrice, curr));
     }
 
-    text("-".repeat(W));
-    text("");
+    dashes();
 
     // ── TOTALS ──────────────────────────────────────────────────
-    text(leftRight("Subtotal", fmt(data.subtotal, curr), W));
-
+    lr("Subtotal", fmt(data.subtotal, curr));
     if (data.discount > 0) {
-        text(leftRight("Discount", "-" + fmt(data.discount, curr), W));
+        lr("Discount", "-" + fmt(data.discount, curr));
     }
-
     if (data.tax > 0) {
-        text(leftRight("Tax", fmt(data.tax, curr), W));
+        lr("Tax", fmt(data.tax, curr));
     }
-
-    text("-".repeat(W));
-    text(leftRight("Payment", data.paymentMethod, W));
-
+    dashes();
+    lr("Payment", data.paymentMethod);
     if (data.amountTendered !== undefined) {
-        text(leftRight("Tendered", fmt(data.amountTendered, curr), W));
-        text(leftRight("Change", fmt(data.change ?? 0, curr), W));
+        lr("Tendered", fmt(data.amountTendered, curr));
+        lr("Change", fmt(data.change ?? 0, curr));
     }
 
     // ── NOTE ────────────────────────────────────────────────────
     if (data.note?.trim()) {
-        text("-".repeat(W));
-        text("Note: " + data.note.trim().slice(0, 27));
+        dashes();
+        line("Note: " + data.note.trim().slice(0, 26));
     }
 
-    // ── TOTAL (big) ─────────────────────────────────────────────
-    text("=".repeat(W));
-    text("");
-    push(new Uint8Array([ESC, 0x61, 0x01])); // center
-    text(center("TOTAL: " + fmt(data.total, curr), W));
-    text("");
+    // ── TOTAL ───────────────────────────────────────────────────
+    equals();
+    blank();
+    c("TOTAL: " + fmt(data.total, curr));
+    blank();
 
     // ── QR CODE ─────────────────────────────────────────────────
-    text("=".repeat(W));
-    text(center("SCAN TO VERIFY", W));
-    text("");
+    equals();
+    c("SCAN TO VERIFY");
+    blank();
 
     const qrData = strToBytes(data.verifyUrl);
     const storeLen = qrData.length + 3;
     const pL = storeLen & 0xff;
     const pH = (storeLen >> 8) & 0xff;
-    push(new Uint8Array([GS, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00])); // QR model 2
-    push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, 0x04]));        // size 4
-    push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x30]));        // error correction
-    push(new Uint8Array([GS, 0x28, 0x6b, pL, pH, 0x31, 0x50, 0x30]));            // store data
-    push(qrData);
-    push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30]));        // print QR
+    out.push(new Uint8Array([GS, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00])); // model 2
+    out.push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, 0x04]));        // size 4
+    out.push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x30]));        // error L
+    out.push(new Uint8Array([GS, 0x28, 0x6b, pL, pH, 0x31, 0x50, 0x30]));            // store
+    out.push(qrData);
+    out.push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30]));        // print
 
     // ── FOOTER ──────────────────────────────────────────────────
-    text("");
-    text("=".repeat(W));
-    text(center("THANK YOU!", W));
-    text(center("For shopping at", W));
-    text(center(data.orgName, W));
-    text("");
-    text(center("We appreciate your business", W));
-    text("=".repeat(W));
-    text("");
+    blank();
+    equals();
+    c("THANK YOU!");
+    c("For shopping at");
+    c(data.orgName);
+    blank();
+    c("We appreciate your business");
+    equals();
+    blank();
 
     // ── Feed + cut ──────────────────────────────────────────────
-    push(new Uint8Array([ESC, 0x64, 0x03])); // feed 3 lines
-    push(new Uint8Array([GS, 0x56, 0x41, 0x00])); // partial cut
+    out.push(new Uint8Array([ESC, 0x64, 0x04]));      // feed 4 lines
+    out.push(new Uint8Array([GS, 0x56, 0x41, 0x00])); // partial cut
 
-    return concat(...lines);
+    return concat(...out);
 }
 
 // ── BLE writing ─────────────────────────────────────────────────────
 
-const CHUNK_SIZE = 200; // BLE MTU safe chunk
+// BLE MTU is typically 23 bytes. Leave 3 bytes for overhead → 20 byte payload.
+// Cheap thermal printers have tiny buffers, so chunk small and delay between writes.
+const CHUNK_SIZE = 20;
+const CHUNK_DELAY_MS = 30;
 
 async function writeInChunks(
     char: Characteristic,
     data: Uint8Array,
 ): Promise<void> {
+    console.log(`[BLE] Sending ${data.length} bytes in ${Math.ceil(data.length / CHUNK_SIZE)} chunks of ${CHUNK_SIZE}`);
     for (let offset = 0; offset < data.length; offset += CHUNK_SIZE) {
         const chunk = data.slice(offset, offset + CHUNK_SIZE);
         const b64 = bytesToBase64(chunk);
         await char.writeWithoutResponse(b64);
-        // small delay to avoid buffer overflow on cheap printers
-        await new Promise((r) => setTimeout(r, 20));
+        await new Promise((r) => setTimeout(r, CHUNK_DELAY_MS));
     }
 }
 
@@ -446,6 +448,9 @@ export async function printReceiptBLE(
     try {
         connected = await manager.connectToDevice(device.id);
         await connected.discoverAllServicesAndCharacteristics();
+        // Wait for printer to be ready — writing immediately drops the first bytes
+        await new Promise((r) => setTimeout(r, 500));
+        console.log(`[BLE] Connected to ${device.name ?? device.localName ?? device.id}`);
     } catch (err: any) {
         throw new PrinterError(
             `Could not connect to ${device.name ?? "printer"}: ${err?.message ?? "unknown error"}`,
