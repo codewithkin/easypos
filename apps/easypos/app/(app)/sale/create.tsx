@@ -107,7 +107,7 @@ export default function CreateSaleScreen() {
     function handleBack() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         if (step === 0) {
-            router.back();
+            router.push("/(app)/(drawer)");
         } else {
             prevStep();
         }

@@ -101,11 +101,11 @@ export function CustomerStep() {
             contentContainerStyle={{ paddingBottom: 120 }}
         >
             <View className="px-4 py-4 gap-4">
-                {/* Skip */}
+                {/* Skip with brand colors */}
                 <Pressable
                     onPress={handleSkip}
                     className={cn(
-                        "flex-row items-center gap-3 px-4 py-3.5 rounded-xl border",
+                        "flex-row items-center gap-3 px-4 py-3.5 rounded-xl border-2",
                         customer === null
                             ? "bg-primary/5 border-primary"
                             : "bg-card border-border",
@@ -113,12 +113,12 @@ export function CustomerStep() {
                 >
                     <View className={cn(
                         "w-9 h-9 rounded-full items-center justify-center",
-                        customer === null ? "bg-primary" : "bg-secondary",
+                        customer === null ? "bg-primary" : "bg-yellow-100",
                     )}>
                         <Ionicons
                             name="person-outline"
                             size={18}
-                            color={customer === null ? "white" : BRAND.dark}
+                            color={customer === null ? "white" : BRAND.yellow}
                         />
                     </View>
                     <View className="flex-1">
@@ -134,9 +134,9 @@ export function CustomerStep() {
 
                 <Separator />
 
-                {/* Selected customer badge */}
+                {/* Selected customer badge with gradient */}
                 {customer?.id && (
-                    <View className="flex-row items-center gap-3 px-4 py-3.5 rounded-xl bg-primary/5 border border-primary">
+                    <View className="flex-row items-center gap-3 px-4 py-3.5 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary">
                         <View className="w-9 h-9 rounded-full bg-primary items-center justify-center">
                             <Text className="text-primary-foreground font-bold text-sm">
                                 {customer.name[0].toUpperCase()}

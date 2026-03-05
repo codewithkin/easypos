@@ -96,12 +96,18 @@ export function ProductsStep({
             <Pressable
                 onPress={() => handleTap(item)}
                 className={cn(
-                    "flex-1 m-1 rounded-xl border bg-card overflow-hidden",
-                    inCart ? "border-primary" : "border-border",
+                    "flex-1 m-1.5 rounded-2xl border-2 bg-card overflow-hidden shadow-sm",
+                    inCart ? "border-primary bg-primary/5" : "border-border hover:border-primary/30",
                 )}
+                style={{
+                    shadowColor: inCart ? BRAND.brand : BRAND.dark,
+                    shadowOpacity: inCart ? 0.15 : 0.05,
+                    shadowRadius: 8,
+                    elevation: inCart ? 4 : 2,
+                }}
             >
-                {/* Image */}
-                <View className="w-full aspect-square bg-secondary items-center justify-center overflow-hidden">
+                {/* Image container with brand accent */}
+                <View className="w-full aspect-square bg-gradient-to-b from-secondary to-secondary/50 items-center justify-center overflow-hidden relative">
                     {item.imageUrl ? (
                         <Image
                             source={{ uri: item.imageUrl }}
@@ -109,27 +115,50 @@ export function ProductsStep({
                             resizeMode="cover"
                         />
                     ) : (
-                        <Ionicons name="cube-outline" size={32} color={BRAND.mid} />
+                        <View className="items-center gap-1">
+                            <Ionicons name="cube-outline" size={40} color={BRAND.mid} />
+                            <Text className="text-muted-foreground text-xs">No image</Text>
+                        </View>
                     )}
+
+                    {/* In-cart badge */}
                     {inCart && (
-                        <View className="absolute top-1.5 right-1.5 bg-primary rounded-full w-5 h-5 items-center justify-center">
-                            <Text className="text-primary-foreground text-[10px] font-bold">{qty}</Text>
+                        <View
+                            className="absolute top-2 right-2 bg-primary rounded-full w-6 h-6 items-center justify-center border-2 border-white"
+                            style={{ shadowColor: BRAND.brand, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3 }}
+                        >
+                            <Text className="text-primary-foreground text-xs font-bold">{qty}</Text>
+                        </View>
+                    )}
+
+                    {/* Category badge */}
+                    {item.category && (
+                        <View className="absolute top-2 left-2 bg-yellow-100 px-2 py-1 rounded-lg">
+                            <Text className="text-yellow-900 text-xs font-medium">{item.category.name}</Text>
                         </View>
                     )}
                 </View>
 
-                {/* Info */}
-                <View className="px-2 pt-1.5 pb-2 gap-0.5">
-                    <Text className="text-foreground text-xs font-medium leading-tight" numberOfLines={2}>
+                {/* Info section with brand color accents */}
+                <View className={cn(
+                    "px-3 pt-3 pb-3 gap-1.5",
+                    inCart && "border-t-2 border-primary/20"
+                )}>
+                    <Text className="text-foreground text-xs font-semibold leading-tight" numberOfLines={2}>
                         {item.name}
                     </Text>
-                    <Text className="text-foreground font-bold text-sm">
-                        {formatCurrency(item.price, user?.org.currency)}
-                    </Text>
+                    <View className="flex-row items-baseline justify-between">
+                        <Text className="text-primary font-bold text-base">
+                            {formatCurrency(item.price, user?.org.currency)}
+                        </Text>
+                        {item.category && (
+                            <Text className="text-muted-foreground text-xs">{item.sku}</Text>
+                        )}
+                    </View>
 
                     {/* Quantity stepper — only visible when in cart */}
                     {inCart && (
-                        <View className="mt-1">
+                        <View className="mt-2 pt-2 border-t border-primary/10">
                             <QuantityControl
                                 quantity={qty}
                                 onChange={(next) => setQuantity(item.id, next)}
@@ -144,10 +173,10 @@ export function ProductsStep({
 
     return (
         <View className="flex-1">
-            {/* Search + categories */}
-            <View className="px-4 py-3 gap-3">
-                <View className="flex-row items-center bg-secondary rounded-xl px-3 h-11">
-                    <Ionicons name="search" size={18} color={BRAND.dark} />
+            {/* Search + categories with brand colors */}
+            <View className="px-4 py-4 gap-3 bg-gradient-to-b from-primary/5 to-transparent">
+                <View className="flex-row items-center bg-card rounded-xl px-3 h-11 border border-border">
+                    <Ionicons name="search" size={18} color={BRAND.brand} />
                     <TextInput
                         placeholder="Search products..."
                         placeholderTextColor={BRAND.dark}
@@ -157,7 +186,7 @@ export function ProductsStep({
                     />
                     {search.length > 0 && (
                         <Pressable onPress={() => onSearchChange("")}>
-                            <Ionicons name="close-circle" size={18} color={BRAND.dark} />
+                            <Ionicons name="close-circle" size={18} color={BRAND.mid} />
                         </Pressable>
                     )}
                 </View>
@@ -168,21 +197,21 @@ export function ProductsStep({
                         data={[{ id: null as any, name: "All" }, ...categories]}
                         keyExtractor={(item) => item.id ?? "all"}
                         showsHorizontalScrollIndicator={false}
-                        renderItem={({ item }) => (
+                        renderItem={({ item, index }) => (
                             <Pressable
                                 onPress={() => onCategoryChange(item.id)}
                                 className={cn(
-                                    "px-4 py-1.5 rounded-full mr-2 border",
+                                    "px-4 py-2 rounded-full mr-2.5 border-2 font-medium",
                                     selectedCategory === item.id
-                                        ? "bg-primary border-primary"
-                                        : "bg-card border-border",
+                                        ? "bg-gradient-to-r from-primary to-primary/80 border-primary"
+                                        : index === 0 ? "bg-yellow-50 border-yellow-200" : "bg-card border-border",
                                 )}
                             >
                                 <Text className={cn(
-                                    "text-sm font-medium",
+                                    "text-sm font-semibold",
                                     selectedCategory === item.id
                                         ? "text-primary-foreground"
-                                        : "text-foreground",
+                                        : index === 0 ? "text-yellow-900" : "text-foreground",
                                 )}>
                                     {item.name}
                                 </Text>

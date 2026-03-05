@@ -77,17 +77,17 @@ export function PaymentStep() {
             contentContainerStyle={{ paddingBottom: 120 }}
         >
             <View className="px-4 py-4 gap-5">
-                {/* Order total */}
-                <View className="flex-row justify-between items-center px-4 py-3.5 bg-card border border-border rounded-xl">
-                    <Text className="text-muted-foreground text-sm">Order total</Text>
-                    <Text className="text-foreground font-bold text-lg">
+                {/* Order total with brand accent */}
+                <View className="flex-row justify-between items-center px-4 py-3.5 bg-gradient-to-r from-primary/10 to-transparent border-2 border-primary rounded-xl">
+                    <Text className="text-muted-foreground text-sm font-medium">Order total</Text>
+                    <Text className="text-primary font-bold text-xl">
                         {formatCurrency(finalTotal)}
                     </Text>
                 </View>
 
-                {/* Payment method selector */}
-                <View className="gap-2">
-                    <Text className="text-muted-foreground text-xs uppercase tracking-wider">
+                {/* Payment method selector with brand colors */}
+                <View className="gap-3">
+                    <Text className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">
                         Payment method
                     </Text>
                     <View className="gap-2">
@@ -101,20 +101,20 @@ export function PaymentStep() {
                                         setPaymentMethod(pm.value);
                                     }}
                                     className={cn(
-                                        "flex-row items-center gap-3 px-4 py-3.5 rounded-xl border",
+                                        "flex-row items-center gap-3 px-4 py-3.5 rounded-xl border-2",
                                         selected
-                                            ? "bg-primary/5 border-primary"
+                                            ? "bg-gradient-to-r from-primary/10 to-primary/5 border-primary"
                                             : "bg-card border-border",
                                     )}
                                 >
                                     <View className={cn(
                                         "w-9 h-9 rounded-full items-center justify-center",
-                                        selected ? "bg-primary" : "bg-secondary",
+                                        selected ? "bg-primary" : "bg-yellow-100",
                                     )}>
                                         <Ionicons
                                             name={pm.icon}
                                             size={18}
-                                            color={selected ? "white" : BRAND.dark}
+                                            color={selected ? "white" : BRAND.yellow}
                                         />
                                     </View>
                                     <View className="flex-1">
@@ -139,11 +139,11 @@ export function PaymentStep() {
                     </View>
                 </View>
 
-                {/* Credit warning */}
+                {/* Credit warning with brand accent */}
                 {isCredit && (
-                    <View className="flex-row gap-3 p-3.5 rounded-xl bg-amber-50 border border-amber-200">
+                    <View className="flex-row gap-3 p-3.5 rounded-xl bg-amber-50 border-2 border-amber-200">
                         <Ionicons name="warning-outline" size={18} color="#B45309" />
-                        <Text className="text-amber-800 text-xs flex-1 leading-5">
+                        <Text className="text-amber-800 text-xs flex-1 leading-5 font-medium">
                             This sale will be recorded as a credit. Make sure you have
                             the customer's details before completing.
                         </Text>

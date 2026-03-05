@@ -37,9 +37,9 @@ export function SummaryStep() {
             contentContainerStyle={{ paddingBottom: 140 }}
         >
             <View className="px-4 py-4 gap-4">
-                {/* ── Cart items ─────────────────────────────────────────── */}
+                {/* ── Cart items with brand accent ─────────────────────────────────────────── */}
                 <SectionHeader icon="cart-outline" title="Items" />
-                <View className="bg-card border border-border rounded-xl overflow-hidden">
+                <View className="bg-card border-2 border-primary/30 rounded-xl overflow-hidden">
                     {cart.map((item, idx) => (
                         <View key={item.product.id}>
                             {idx > 0 && <Separator />}
@@ -51,7 +51,7 @@ export function SummaryStep() {
                                     )}
                                 </View>
                                 <View className="items-end">
-                                    <Text className="text-foreground text-sm font-semibold">
+                                    <Text className="text-primary text-sm font-bold">
                                         {formatCurrency(item.product.price * item.quantity)}
                                     </Text>
                                     <Text className="text-muted-foreground text-xs">
@@ -62,7 +62,7 @@ export function SummaryStep() {
                         </View>
                     ))}
 
-                    {/* Subtotal / Discount / Total */}
+                    {/* Subtotal / Discount / Total with brand colors */}
                     <Separator />
                     {discountAmount > 0 && (
                         <>
@@ -70,14 +70,14 @@ export function SummaryStep() {
                                 <Text className="text-muted-foreground text-sm">Subtotal</Text>
                                 <Text className="text-foreground text-sm">{formatCurrency(subtotal)}</Text>
                             </View>
-                            <View className="flex-row justify-between px-4 py-2">
-                                <Text className="text-green-700 text-sm">Discount</Text>
-                                <Text className="text-green-700 text-sm">−{formatCurrency(discountAmount)}</Text>
+                            <View className="flex-row justify-between px-4 py-2 bg-yellow-50">
+                                <Text className="text-yellow-900 text-sm font-semibold">Discount</Text>
+                                <Text className="text-yellow-900 text-sm font-semibold">−{formatCurrency(discountAmount)}</Text>
                             </View>
                             <Separator />
                         </>
                     )}
-                    <View className="flex-row justify-between px-4 py-3">
+                    <View className="flex-row justify-between px-4 py-3 bg-gradient-to-r from-primary/5 to-transparent">
                         <Text className="text-foreground font-bold text-sm">Total</Text>
                         <Text className="text-foreground font-bold text-base">
                             {formatCurrency(finalTotal)}
