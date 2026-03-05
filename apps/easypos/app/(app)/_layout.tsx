@@ -22,6 +22,9 @@ export default function AppLayout() {
             <Stack.Screen name="team/invite" />
             <Stack.Screen name="billing/plans" />
             <Stack.Screen name="billing/usage" />
+            <Stack.Screen name="store/branches" />
+            <Stack.Screen name="store/receipt-settings" />
+            <Stack.Screen name="store/printer" />
         </Stack>
     );
 }

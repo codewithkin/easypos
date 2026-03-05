@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useMemo, useCallback, useRef } from "react";
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
+import * as Haptics from "expo-haptics";
 
 import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
@@ -13,11 +14,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/store/auth";
 import { useRole } from "@/hooks/use-role";
-import { useApiPaginatedQuery } from "@/hooks/use-api";
+import { useApiPaginatedQuery, useApiPost } from "@/hooks/use-api";
 import { formatCurrency, formatTime, formatDate, formatDateTime, PAYMENT_METHOD_LABELS, SALE_STATUS_LABELS } from "@easypos/utils";
 import type { Sale, SaleItem } from "@easypos/types";
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/theme";
+import { printReceiptBLE, buildEscPosReceipt, PrinterError, type ReceiptData } from "@/lib/thermal-printer";
+import { toast } from "@/lib/toast";
 
 type SaleWithDetails = Sale & {
     items: SaleItem[];
@@ -45,6 +48,59 @@ export default function SalesScreen() {
     // Bottom sheet for sale preview
     const bottomSheetRef = useRef<BottomSheet>(null);
     const [selectedSale, setSelectedSale] = useState<SaleWithDetails | null>(null);
+    const [isPrinting, setIsPrinting] = useState(false);
+
+    const { mutate: recordPrint } = useApiPost<unknown, { printerName?: string }>({
+        path: selectedSale ? `/sales/${selectedSale.id}/print` : "/sales/noop/print",
+    });
+
+    const handlePrint = useCallback(async () => {
+        if (!selectedSale || isPrinting) return;
+        setIsPrinting(true);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        try {
+            const verifyUrl = `easypos://verify?id=${selectedSale.id}`;
+            const receiptData: ReceiptData = {
+                orgName: user?.org.name ?? "EasyPOS",
+                branchName: "",
+                receiptNumber: selectedSale.receiptNumber,
+                createdAt: formatDateTime(selectedSale.createdAt),
+                cashierName: selectedSale.cashier.name,
+                items: selectedSale.items.map((i) => ({
+                    name: i.productName,
+                    qty: i.quantity,
+                    unitPrice: i.unitPrice,
+                    total: i.total,
+                })),
+                subtotal: selectedSale.subtotal,
+                discount: selectedSale.discount,
+                tax: selectedSale.tax,
+                total: selectedSale.total,
+                paymentMethod: PAYMENT_METHOD_LABELS[selectedSale.paymentMethod],
+                amountTendered: selectedSale.amountTendered ?? undefined,
+                change: selectedSale.change ?? undefined,
+                note: selectedSale.note ?? undefined,
+                currency: user?.org.currency,
+                verifyUrl,
+            };
+            const bytes = buildEscPosReceipt(receiptData);
+            const { printerName } = await printReceiptBLE(bytes);
+            recordPrint({ printerName });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            toast.success("Receipt printed", `Sent to ${printerName}`);
+        } catch (err: any) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            if (err instanceof PrinterError) {
+                if (err.code === "BLUETOOTH_OFF") toast.error("Bluetooth is off", "Turn on Bluetooth and try again.");
+                else if (err.code === "NO_PRINTER_FOUND") toast.error("Printer not found", "Ensure printer is on, paired, and in range.");
+                else toast.error("Print error", err.message);
+            } else {
+                toast.error("Print error", err?.message ?? "Unknown error");
+            }
+        } finally {
+            setIsPrinting(false);
+        }
+    }, [selectedSale, isPrinting, user]);
 
     const {
         items: sales,
@@ -501,14 +557,30 @@ export default function SalesScreen() {
                             )}
                         </View>
 
-                        {/* View full detail button */}
-                        <Button
-                            onPress={handleViewFull}
-                            className="mt-3 h-12 w-full flex-row items-center gap-2"
-                        >
-                            <Ionicons name="receipt-outline" size={18} color="hsl(0 0% 98%)" />
-                            <Text className="text-primary-foreground font-semibold">View Full Receipt</Text>
-                        </Button>
+                        {/* Action buttons */}
+                        <View className="flex-row gap-3 mt-3">
+                            <Button
+                                onPress={handlePrint}
+                                disabled={isPrinting || selectedSale?.status !== "COMPLETED"}
+                                className="flex-1 h-12 flex-row items-center gap-2 bg-secondary"
+                            >
+                                {isPrinting ? (
+                                    <ActivityIndicator size="small" color={BRAND.brand} />
+                                ) : (
+                                    <Ionicons name="print-outline" size={18} color={BRAND.brand} />
+                                )}
+                                <Text className="text-primary font-semibold text-sm">
+                                    {isPrinting ? "Printing…" : "Print"}
+                                </Text>
+                            </Button>
+                            <Button
+                                onPress={handleViewFull}
+                                className="flex-1 h-12 flex-row items-center gap-2"
+                            >
+                                <Ionicons name="receipt-outline" size={18} color="hsl(0 0% 98%)" />
+                                <Text className="text-primary-foreground font-semibold text-sm">Full Receipt</Text>
+                            </Button>
+                        </View>
                     </BottomSheetScrollView>
                 ) : (
                     <View className="flex-1 items-center justify-center">

@@ -229,7 +229,7 @@ export default function ProductsScreen() {
                             <Text className="text-primary-foreground font-semibold text-sm">Add Product</Text>
                         </Button>
                     )}
-                </View>            ) : (
+                </View>) : (
                 <FlatList
                     data={filtered}
                     keyExtractor={(item) => item.id}

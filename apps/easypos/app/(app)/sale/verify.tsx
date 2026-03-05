@@ -48,6 +48,15 @@ export default function SaleVerifyScreen() {
     const [permission, requestPermission] = useCameraPermissions();
     const [state, setState] = useState<VerifyState>({ phase: "scanning" });
     const [scannedUrl, setScannedUrl] = useState<string | null>(null);
+    const [hasAutoRequested, setHasAutoRequested] = useState(false);
+
+    // Auto-request camera permission once when it loads and canAskAgain is true
+    useEffect(() => {
+        if (!hasAutoRequested && permission !== null && !permission.granted && permission.canAskAgain) {
+            setHasAutoRequested(true);
+            requestPermission();
+        }
+    }, [permission, hasAutoRequested]);
 
     // Auto-verify if deep link passes a sale ID
     useEffect(() => {

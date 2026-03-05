@@ -202,18 +202,21 @@ export default function StoreScreen() {
                                 icon="business-outline"
                                 label="Manage Branches"
                                 subtitle="View and configure branches"
+                                onPress={() => router.push("/(app)/store/branches" as any)}
                             />
                             <Separator className="ml-16" />
                             <SettingsItem
                                 icon="receipt-outline"
                                 label="Receipt Settings"
                                 subtitle="Header & footer text"
+                                onPress={() => router.push("/(app)/store/receipt-settings" as any)}
                             />
                             <Separator className="ml-16" />
                             <SettingsItem
                                 icon="print-outline"
                                 label="Printer Setup"
                                 subtitle="Bluetooth printers"
+                                onPress={() => router.push("/(app)/store/printer" as any)}
                             />
                         </View>
                     </>
