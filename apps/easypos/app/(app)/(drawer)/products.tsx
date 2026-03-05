@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { View, FlatList, Pressable, TextInput, RefreshControl, useWindowDimensions } from "react-native";
+import { View, FlatList, Pressable, TextInput, RefreshControl, useWindowDimensions, Image } from "react-native";
 import { router } from "expo-router";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,7 +9,6 @@ import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/store/auth";
 import { useRole } from "@/hooks/use-role";
 import { useApiQuery, useApiPaginatedQuery } from "@/hooks/use-api";
@@ -73,51 +72,53 @@ export default function ProductsScreen() {
 
     const activeCount = products.filter((p) => p.isActive).length;
 
-    function renderProduct({ item }: { item: ProductWithCategory }) {
+    function renderProduct({ item, index }: { item: ProductWithCategory; index: number }) {
+        const isOdd = index % 2 !== 0;
         return (
             <Pressable
                 onPress={() => router.push(`/(app)/products/${item.id}`)}
-                className="px-5 py-3.5 active:bg-secondary"
+                className="flex-1 m-1.5 rounded-2xl bg-card border border-border overflow-hidden active:opacity-80"
+                style={{ maxWidth: "50%" }}
             >
-                <View className="flex-row items-center justify-between">
-                    <View className="flex-1 mr-3">
-                        <View className="flex-row items-center gap-2 flex-wrap">
-                            <Text className="text-foreground font-medium text-sm">{item.name}</Text>
-                            {!item.isActive && (
-                                <Badge variant="outline" className="px-1.5 py-0.5 bg-destructive/10 border-destructive/30">
-                                    <Text className="text-[10px] text-destructive font-medium">Inactive</Text>
-                                </Badge>
-                            )}
+                {/* Image */}
+                <View className="w-full aspect-square bg-secondary items-center justify-center">
+                    {item.imageUrl ? (
+                        <Image
+                            source={{ uri: item.imageUrl }}
+                            className="w-full h-full"
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <Ionicons name="cube-outline" size={36} color={BRAND.mid} />
+                    )}
+                    {!item.isActive && (
+                        <View className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-destructive/90">
+                            <Text className="text-[10px] text-white font-medium">Inactive</Text>
                         </View>
-                        <View className="flex-row items-center gap-1.5 mt-0.5">
-                            <Text className="text-muted-foreground text-xs">SKU: {item.sku}</Text>
-                            {item.category && (
-                                <>
-                                    <Text className="text-muted-foreground text-xs">{"\u00B7"}</Text>
-                                    <Text className="text-muted-foreground text-xs">{item.category.name}</Text>
-                                </>
-                            )}
-                        </View>
-                        {item.tags && item.tags.length > 0 && (
-                            <View className="flex-row flex-wrap gap-1 mt-1">
-                                {item.tags.map((t) => (
-                                    <View key={t.tag.id} className="px-1.5 py-0.5 rounded bg-primary/10">
-                                        <Text className="text-[10px] text-primary font-medium">{t.tag.name}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-                    </View>
-                    <View className="items-end gap-0.5">
-                        <Text className="text-foreground font-bold text-sm">
-                            {formatCurrency(item.price, user?.org.currency)}
+                    )}
+                </View>
+
+                {/* Info */}
+                <View className="p-3 gap-0.5">
+                    <Text className="text-foreground font-semibold text-sm" numberOfLines={2}>
+                        {item.name}
+                    </Text>
+                    {item.category && (
+                        <Text className="text-muted-foreground text-xs" numberOfLines={1}>
+                            {item.category.name}
                         </Text>
-                        {item.cost != null && (
-                            <Text className="text-muted-foreground text-xs">
-                                Cost: {formatCurrency(item.cost, user?.org.currency)}
-                            </Text>
-                        )}
-                    </View>
+                    )}
+                    <Text className="text-primary font-bold text-sm mt-1">
+                        {formatCurrency(item.price, user?.org.currency)}
+                    </Text>
+                    {item.stock != null && (
+                        <Text className={cn(
+                            "text-xs font-medium",
+                            item.stock <= 0 ? "text-destructive" : item.stock <= 5 ? "text-amber-500" : "text-muted-foreground",
+                        )}>
+                            {item.stock <= 0 ? "Out of stock" : `${item.stock} in stock`}
+                        </Text>
+                    )}
                 </View>
             </Pressable>
         );
@@ -203,9 +204,15 @@ export default function ProductsScreen() {
 
             {/* ── Product List ── */}
             {isLoading ? (
-                <View className="px-5 gap-3">
+                <View className="flex-row flex-wrap px-2">
                     {Array.from({ length: 6 }).map((_, i) => (
-                        <Skeleton key={i} className="h-16 rounded-xl" />
+                        <View key={i} className="w-1/2 p-1.5">
+                            <Skeleton className="rounded-2xl aspect-square" />
+                            <View className="mt-2 gap-1.5 px-1">
+                                <Skeleton className="h-4 w-3/4 rounded" />
+                                <Skeleton className="h-3 w-1/2 rounded" />
+                            </View>
+                        </View>
                     ))}
                 </View>
             ) : filtered.length === 0 ? (
@@ -222,13 +229,13 @@ export default function ProductsScreen() {
                             <Text className="text-primary-foreground font-semibold text-sm">Add Product</Text>
                         </Button>
                     )}
-                </View>
-            ) : (
+                </View>            ) : (
                 <FlatList
                     data={filtered}
                     keyExtractor={(item) => item.id}
                     renderItem={renderProduct}
-                    ItemSeparatorComponent={() => <Separator className="ml-5" />}
+                    numColumns={2}
+                    columnWrapperStyle={{ paddingHorizontal: 6 }}
                     refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
                     onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage(); }}
                     onEndReachedThreshold={0.5}
@@ -239,7 +246,7 @@ export default function ProductsScreen() {
                             </View>
                         ) : null
                     }
-                    contentContainerStyle={{ paddingBottom: 40 }}
+                    contentContainerStyle={{ paddingBottom: 40, paddingTop: 4 }}
                 />
             )}
         </View>

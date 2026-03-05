@@ -55,7 +55,15 @@ const customers = new Hono<Env>()
 
     const customer = await db.customer.findFirst({
       where: { id, orgId },
-      include: { _count: { select: { sales: true } } },
+      include: {
+        _count: { select: { sales: true } },
+        sales: {
+          include: {
+            cashier: { select: { id: true, name: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        },
+      },
     });
 
     if (!customer) return c.json({ error: "Customer not found" }, 404);

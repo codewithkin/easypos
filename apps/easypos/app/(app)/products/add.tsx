@@ -16,6 +16,7 @@ import { pickAndUploadSquareImage } from "@/lib/upload";
 import type { Category, Tag } from "@easypos/types";
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/theme";
+import { router } from "expo-router";
 
 interface Field {
     name: string;

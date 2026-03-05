@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "easypos",
+    "name": "EasyPOS",
     "slug": "easypos",
     "version": "1.0.0",
     "scheme": "easypos",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#00B25A"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -21,7 +21,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#00B25A"
       },
       "package": "com.easypos.app"
     },
