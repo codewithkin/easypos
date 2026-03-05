@@ -86,7 +86,7 @@ export default function SaleDetailScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         try {
-            const verifyUrl = `${SERVER_BASE}/api/sales/verify/${sale.receiptNumber}`;
+            const verifyUrl = `easypos://verify?id=${sale.id}`;
 
             const receiptData: ReceiptData = {
                 orgName: user?.org?.name ?? "EasyPOS",

@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { View, Pressable, ActivityIndicator, Linking } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
@@ -14,9 +14,9 @@ import { BRAND } from "@/lib/theme";
 import { formatCurrency, formatDateTime, PAYMENT_METHOD_LABELS, SALE_STATUS_LABELS } from "@easypos/utils";
 
 const SERVER_BASE = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://localhost:3000";
-const VERIFY_PREFIX = `${SERVER_BASE}/api/sales/verify/`;
 
 interface VerifiedSale {
+    id: string;
     receiptNumber: string;
     status: string;
     total: number;
@@ -44,36 +44,75 @@ type VerifyState =
 
 export default function SaleVerifyScreen() {
     const insets = useSafeAreaInsets();
+    const { id: saleId } = useLocalSearchParams<{ id?: string }>();
     const [permission, requestPermission] = useCameraPermissions();
     const [state, setState] = useState<VerifyState>({ phase: "scanning" });
     const [scannedUrl, setScannedUrl] = useState<string | null>(null);
+
+    // Auto-verify if deep link passes a sale ID
+    useEffect(() => {
+        if (saleId && permission?.granted) {
+            verifySaleById(saleId);
+        }
+    }, [saleId, permission?.granted]);
+
+    const verifySaleById = async (id: string) => {
+        setState({ phase: "loading" });
+        try {
+            const resp = await fetch(`${SERVER_BASE}/api/sales/${id}`);
+            if (!resp.ok) {
+                const body = await resp.json().catch(() => ({}));
+                throw new Error(body?.error ?? `HTTP ${resp.status}`);
+            }
+            const sale: VerifiedSale = await resp.json();
+            setState({ phase: "success", sale });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } catch (err: any) {
+            setState({
+                phase: "error",
+                message: err?.message ?? "Could not verify sale",
+            });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        }
+    };
 
     const handleBarcode = useCallback(
         async (result: BarcodeScanningResult) => {
             const url = result.data;
 
-            // Only handle our own verify URLs
-            if (!url.includes("/api/sales/verify/")) return;
-            // Avoid re-scanning while loading/showing result
-            if (state.phase !== "scanning") return;
-
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            setScannedUrl(url);
-            setState({ phase: "loading" });
-
-            try {
-                const resp = await fetch(url);
-                if (!resp.ok) {
-                    const body = await resp.json().catch(() => ({}));
-                    throw new Error(body?.error ?? `HTTP ${resp.status}`);
+            // Handle deep links: easypos://verify?id=SALE_ID
+            if (url.startsWith("easypos://verify")) {
+                const match = url.match(/id=([^&]+)/);
+                if (match) {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    await verifySaleById(match[1]);
                 }
-                const sale: VerifiedSale = await resp.json();
-                setState({ phase: "success", sale });
-            } catch (err: any) {
-                setState({
-                    phase: "error",
-                    message: err?.message ?? "Could not verify sale",
-                });
+                return;
+            }
+
+            // Handle old HTTP URLs (backwards compatibility)
+            if (url.includes("/api/sales/verify/")) {
+                // Avoid re-scanning while loading/showing result
+                if (state.phase !== "scanning") return;
+
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                setScannedUrl(url);
+                setState({ phase: "loading" });
+
+                try {
+                    const resp = await fetch(url);
+                    if (!resp.ok) {
+                        const body = await resp.json().catch(() => ({}));
+                        throw new Error(body?.error ?? `HTTP ${resp.status}`);
+                    }
+                    const sale: VerifiedSale = await resp.json();
+                    setState({ phase: "success", sale });
+                } catch (err: any) {
+                    setState({
+                        phase: "error",
+                        message: err?.message ?? "Could not verify sale",
+                    });
+                }
             }
         },
         [state.phase],
