@@ -134,6 +134,7 @@ function fmt(amount: number, currency = "$"): string {
 
 export function buildEscPosReceipt(data: ReceiptData): Uint8Array {
     const curr = data.currency ?? "$";
+    const W = 32; // 58mm printer char width (normal mode)
     const lines: Uint8Array[] = [];
 
     function push(bytes: Uint8Array) {
@@ -142,167 +143,188 @@ export function buildEscPosReceipt(data: ReceiptData): Uint8Array {
     function text(s: string) {
         push(strToBytes(s + "\n"));
     }
-    function rule(char = "-", width = 32) {
-        text(char.repeat(width));
+    function dashedLine() {
+        text("-".repeat(W));
     }
-    function nl(n = 1) {
-        text("\n".repeat(n - 1));
+    function doubleLine() {
+        text("=".repeat(W));
+    }
+    function blank() {
+        text("");
     }
 
-    // ── Initialize + center align ─────────────────────────────────
-    push(new Uint8Array([ESC, 0x40]));                    // ESC @ — initialize
-    push(new Uint8Array([ESC, 0x61, 0x01]));              // ESC a 1 — center
+    // ESC/POS helpers
+    const CMD = {
+        init:         new Uint8Array([ESC, 0x40]),            // reset printer
+        centerOn:     new Uint8Array([ESC, 0x61, 0x01]),      // center align
+        leftOn:       new Uint8Array([ESC, 0x61, 0x00]),      // left align
+        boldOn:       new Uint8Array([ESC, 0x45, 0x01]),      // bold on
+        boldOff:      new Uint8Array([ESC, 0x45, 0x00]),      // bold off
+        doubleOn:     new Uint8Array([ESC, 0x21, 0x10]),      // double height
+        doubleWideOn: new Uint8Array([ESC, 0x21, 0x30]),      // double height + double width
+        normal:       new Uint8Array([ESC, 0x21, 0x00]),      // normal size
+        feed4:        new Uint8Array([ESC, 0x64, 0x04]),      // feed 4 lines
+        cut:          new Uint8Array([GS, 0x56, 0x41, 0x00]), // partial cut
+    };
 
-    // ───────────────────────────────────────────────────────────────
-    // ── STORE HEADER ──────────────────────────────────────────────
-    // ───────────────────────────────────────────────────────────────
-    push(new Uint8Array([ESC, 0x21, 0x18]));              // triple height + bold
-    text(data.orgName.toUpperCase().slice(0, 32));
-    push(new Uint8Array([ESC, 0x21, 0x00]));              // normal
+    // ── Initialize ──────────────────────────────────────────────
+    push(CMD.init);
 
-    nl();
-    
-    push(new Uint8Array([ESC, 0x21, 0x08]));              // bold
-    text(data.branchName.slice(0, 32));
-    push(new Uint8Array([ESC, 0x21, 0x00]));              // normal
+    // ============================================================
+    // ── STORE HEADER (centered) ─────────────────────────────────
+    // ============================================================
+    push(CMD.centerOn);
 
-    nl();
+    push(CMD.doubleOn);
+    push(CMD.boldOn);
+    text(data.orgName.toUpperCase());
+    push(CMD.boldOff);
+    push(CMD.normal);
+
+    text(data.branchName);
+    blank();
     text(data.createdAt);
-    text("─".repeat(32));
+    doubleLine();
 
-    // ───────────────────────────────────────────────────────────────
-    // ── RECEIPT METADATA ──────────────────────────────────────────
-    // ───────────────────────────────────────────────────────────────
-    push(new Uint8Array([ESC, 0x61, 0x00]));              // left align
+    // ============================================================
+    // ── RECEIPT # ───────────────────────────────────────────────
+    // ============================================================
+    push(CMD.leftOn);
 
-    push(new Uint8Array([ESC, 0x21, 0x08]));              // bold
-    text(`Receipt #${data.receiptNumber}`);
-    push(new Uint8Array([ESC, 0x21, 0x00]));              // normal
+    push(CMD.boldOn);
+    text("Receipt #" + data.receiptNumber);
+    push(CMD.boldOff);
 
-    nl();
-    text(leftRight("Cashier:", data.cashierName.slice(0, 20)));
-    
+    blank();
+    text(leftRight("Cashier:", data.cashierName.slice(0, 20), W));
+
+    // ── Customer details ────────────────────────────────────────
     if (data.customerName) {
-        text(leftRight("Customer:", data.customerName.slice(0, 20)));
+        dashedLine();
+        push(CMD.boldOn);
+        text("CUSTOMER");
+        push(CMD.boldOff);
+        text(leftRight("Name:", data.customerName.slice(0, 22), W));
     }
-    
-    text("─".repeat(32));
 
-    // ───────────────────────────────────────────────────────────────
-    // ── ITEMS WITH FORMATTED GRID ────────────────────────────────
-    // ───────────────────────────────────────────────────────────────
-    nl();
-    push(new Uint8Array([ESC, 0x21, 0x08]));              // bold header
-    text(leftRight("Item", "Price"));
-    push(new Uint8Array([ESC, 0x21, 0x00]));              // normal
-    text(leftRight("Qty x Unit", "Total"));
-    text("─".repeat(32));
+    doubleLine();
+
+    // ============================================================
+    // ── ITEMS ───────────────────────────────────────────────────
+    // ============================================================
+    blank();
+    push(CMD.boldOn);
+    text(leftRight("ITEM", "AMOUNT", W));
+    push(CMD.boldOff);
+    dashedLine();
 
     for (const item of data.items) {
-        const itemName = item.name.slice(0, 20);
-        text(leftRight(itemName, fmt(item.total, curr)));
-        text(leftRight(`  ${item.qty}x ${fmt(item.unitPrice, curr)}`, ""));
+        text(item.name.slice(0, W));
+        text(leftRight("  " + item.qty + " x " + fmt(item.unitPrice, curr), fmt(item.total, curr), W));
     }
 
-    text("═".repeat(32));
+    dashedLine();
 
-    // ───────────────────────────────────────────────────────────────
-    // ── TOTALS SECTION ────────────────────────────────────────────
-    // ───────────────────────────────────────────────────────────────
-    nl();
-    text(leftRight("Subtotal:", fmt(data.subtotal, curr)));
-    
+    // ============================================================
+    // ── SUMMARY ─────────────────────────────────────────────────
+    // ============================================================
+    text(leftRight("Subtotal", fmt(data.subtotal, curr), W));
+
     if (data.discount > 0) {
-        push(new Uint8Array([ESC, 0x21, 0x04]));          // bold discount
-        text(leftRight("Discount:", `-${fmt(data.discount, curr)}`));
-        push(new Uint8Array([ESC, 0x21, 0x00]));          // normal
+        text(leftRight("Discount", "-" + fmt(data.discount, curr), W));
     }
-    
+
     if (data.tax > 0) {
-        text(leftRight("Tax:", fmt(data.tax, curr)));
+        text(leftRight("Tax", fmt(data.tax, curr), W));
     }
 
-    nl();
-    push(new Uint8Array([ESC, 0x21, 0x18]));              // triple height + bold
-    text(leftRight("TOTAL", fmt(data.total, curr)));
-    push(new Uint8Array([ESC, 0x21, 0x00]));              // normal
+    dashedLine();
 
-    // ───────────────────────────────────────────────────────────────
-    // ── PAYMENT METHOD ────────────────────────────────────────────
-    // ───────────────────────────────────────────────────────────────
-    text("─".repeat(32));
-    text(leftRight("Payment:", data.paymentMethod));
-    
+    // ── Payment ─────────────────────────────────────────────────
+    text(leftRight("Payment", data.paymentMethod, W));
+
     if (data.amountTendered !== undefined) {
-        text(leftRight("Tendered:", fmt(data.amountTendered, curr)));
-        push(new Uint8Array([ESC, 0x21, 0x08]));          // bold change
-        text(leftRight("Change:", fmt(data.change ?? 0, curr)));
-        push(new Uint8Array([ESC, 0x21, 0x00]));          // normal
+        text(leftRight("Tendered", fmt(data.amountTendered, curr), W));
+        text(leftRight("Change", fmt(data.change ?? 0, curr), W));
     }
 
-    // ───────────────────────────────────────────────────────────────
-    // ── SALE NOTE (if any) ────────────────────────────────────────
-    // ───────────────────────────────────────────────────────────────
+    // ── Note ────────────────────────────────────────────────────
     if (data.note?.trim()) {
-        text("─".repeat(32));
-        const noteLines = data.note.trim().match(/.{1,28}/g) || [];
-        push(new Uint8Array([ESC, 0x21, 0x04]));          // bold note label
+        dashedLine();
+        push(CMD.boldOn);
         text("Note:");
-        push(new Uint8Array([ESC, 0x21, 0x00]));          // normal
+        push(CMD.boldOff);
+        const noteLines = data.note.trim().match(/.{1,30}/g) || [];
         for (const line of noteLines.slice(0, 3)) {
             text(line);
         }
     }
 
-    // ───────────────────────────────────────────────────────────────
-    // ── QR CODE & VERIFICATION ───────────────────────────────────
-    // ───────────────────────────────────────────────────────────────
-    text("═".repeat(32));
-    nl();
-    push(new Uint8Array([ESC, 0x61, 0x01]));              // center
-    
-    push(new Uint8Array([ESC, 0x21, 0x08]));              // bold
-    text("SCAN TO VERIFY");
-    push(new Uint8Array([ESC, 0x21, 0x00]));              // normal
-    nl();
+    doubleLine();
 
-    // GS ( k — store data in QR symbol buffer
+    // ============================================================
+    // ── TOTAL (big & bold) ──────────────────────────────────────
+    // ============================================================
+    blank();
+    push(CMD.centerOn);
+    push(CMD.doubleOn);
+    push(CMD.boldOn);
+    text("TOTAL: " + fmt(data.total, curr));
+    push(CMD.boldOff);
+    push(CMD.normal);
+    blank();
+
+    // ============================================================
+    // ── QR CODE ─────────────────────────────────────────────────
+    // ============================================================
+    doubleLine();
+    blank();
+    push(CMD.boldOn);
+    text("SCAN TO VERIFY");
+    push(CMD.boldOff);
+    blank();
+
+    // GS ( k — QR code commands
     const qrData = strToBytes(data.verifyUrl);
-    const pL = (qrData.length + 3) & 0xff;
-    const pH = ((qrData.length + 3) >> 8) & 0xff;
+    const storeLen = qrData.length + 3;
+    const pL = storeLen & 0xff;
+    const pH = (storeLen >> 8) & 0xff;
     push(new Uint8Array([GS, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00])); // model 2
-    push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, 0x07]));        // size 7
-    push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x30]));        // error M
+    push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, 0x06]));        // size 6
+    push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x31]));        // error correction L
     push(new Uint8Array([GS, 0x28, 0x6b, pL, pH, 0x31, 0x50, 0x30]));            // store data
     push(qrData);
-    push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30]));        // print
+    push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30]));        // print QR
 
-    // ───────────────────────────────────────────────────────────────
-    // ── FOOTER MESSAGE ────────────────────────────────────────────
-    // ───────────────────────────────────────────────────────────────
-    nl(2);
-    text("═".repeat(32));
-    push(new Uint8Array([ESC, 0x61, 0x01]));              // center
-    
-    push(new Uint8Array([ESC, 0x21, 0x10]));              // double height
+    // ============================================================
+    // ── THANK YOU FOOTER ────────────────────────────────────────
+    // ============================================================
+    blank();
+    doubleLine();
+    blank();
+
+    push(CMD.doubleOn);
+    push(CMD.boldOn);
     text("THANK YOU!");
-    push(new Uint8Array([ESC, 0x21, 0x00]));              // normal
-    
-    text(`For shopping at`);
-    push(new Uint8Array([ESC, 0x21, 0x08]));              // bold
+    push(CMD.boldOff);
+    push(CMD.normal);
+
+    blank();
+    text("For shopping at");
+    push(CMD.boldOn);
     text(data.orgName);
-    push(new Uint8Array([ESC, 0x21, 0x00]));              // normal
-    
-    nl();
-    text("Visit us soon!");
-    text("═".repeat(32));
+    push(CMD.boldOff);
+    blank();
+    text("We appreciate your business");
+    text("Visit us again soon!");
+    blank();
+    doubleLine();
 
-    push(new Uint8Array([ESC, 0x61, 0x00]));              // left align
+    push(CMD.leftOn);
 
-    // ── Feed + cut ───────────────────────────────────────────────────
-    nl(2);
-    push(new Uint8Array([ESC, 0x64, 0x05]));              // feed 5 lines
-    push(new Uint8Array([GS, 0x56, 0x41, 0x00]));         // partial cut
+    // ── Feed + cut ──────────────────────────────────────────────
+    push(CMD.feed4);
+    push(CMD.cut);
 
     return concat(...lines);
 }
