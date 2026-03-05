@@ -34,7 +34,6 @@
     "clsx": "^2.1.1",
     "dotenv": "catalog:",
     "expo": "^55.0.0",
-    "expo-barcode-scanner": "^13.0.1",
     "expo-camera": "~55.0.9",
     "expo-constants": "~55.0.7",
     "expo-dev-client": "~55.0.10",

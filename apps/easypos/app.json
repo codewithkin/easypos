@@ -41,7 +41,6 @@
           "cameraPermission": false
         }
       ],
-      "expo-barcode-scanner",
       "react-native-ble-plx"
     ],
     "experiments": {
