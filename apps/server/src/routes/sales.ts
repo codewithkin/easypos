@@ -216,4 +216,41 @@ const sales = new Hono<Env>()
     return c.json(receipt, 201);
   });
 
+// ── Public verify handler (no auth) ─────────────────────────────
+export const verifySalePublic = new Hono().get("/sales/verify/:receiptNumber", async (c) => {
+  const receiptNumber = c.req.param("receiptNumber");
+
+  const sale = await db.sale.findFirst({
+    where: { receiptNumber },
+    include: {
+      items: true,
+      cashier: { select: { id: true, name: true } },
+      branch: { select: { id: true, name: true } },
+      customer: { select: { id: true, name: true } },
+    },
+  });
+
+  if (!sale) return c.json({ error: "Sale not found" }, 404);
+
+  return c.json({
+    receiptNumber: sale.receiptNumber,
+    status: sale.status,
+    total: sale.total,
+    subtotal: sale.subtotal,
+    discount: sale.discount,
+    tax: sale.tax,
+    paymentMethod: sale.paymentMethod,
+    createdAt: sale.createdAt,
+    branch: sale.branch,
+    cashier: { name: sale.cashier.name },
+    customer: sale.customer ? { name: sale.customer.name } : null,
+    items: sale.items.map((i) => ({
+      productName: i.productName,
+      quantity: i.quantity,
+      unitPrice: i.unitPrice,
+      total: i.total,
+    })),
+  });
+});
+
 export default sales;

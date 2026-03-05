@@ -13,6 +13,7 @@ export default function AppLayout() {
             <Stack.Screen name="(drawer)" />
             <Stack.Screen name="sale/create" />
             <Stack.Screen name="sale/[id]" />
+            <Stack.Screen name="sale/verify" />
             <Stack.Screen name="products/add" />
             <Stack.Screen name="products/[id]" />
             <Stack.Screen name="customers/create" />

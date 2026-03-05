@@ -9,7 +9,7 @@ import branches from "./routes/branches.js";
 import users from "./routes/users.js";
 import products from "./routes/products.js";
 import categories from "./routes/categories.js";
-import sales from "./routes/sales.js";
+import sales, { verifySalePublic } from "./routes/sales.js";
 import customers from "./routes/customers.js";
 import tags from "./routes/tags.js";
 import devices from "./routes/devices.js";
@@ -35,6 +35,7 @@ const app = new Hono()
   .route("/users", users)
   .route("/products", products)
   .route("/categories", categories)
+  .route("/", verifySalePublic)
   .route("/sales", sales)
   .route("/customers", customers)
   .route("/tags", tags)

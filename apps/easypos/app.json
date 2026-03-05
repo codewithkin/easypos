@@ -40,7 +40,9 @@
           "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to upload a business logo.",
           "cameraPermission": false
         }
-      ]
+      ],
+      "expo-barcode-scanner",
+      "react-native-ble-plx"
     ],
     "experiments": {
       "typedRoutes": true

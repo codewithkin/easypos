@@ -218,13 +218,21 @@ export default function SalesScreen() {
                             </Text>
                         </View>
                     </View>
-                    <Button
-                        onPress={() => router.push("/(app)/sale/create")}
-                        className="flex-row items-center gap-2 h-10 px-4"
-                    >
-                        <Ionicons name="add-circle" size={18} color="hsl(0 0% 98%)" />
-                        <Text className="text-primary-foreground font-semibold text-sm">New Sale</Text>
-                    </Button>
+                    <View className="flex-row items-center gap-2">
+                        <Pressable
+                            onPress={() => router.push("/(app)/sale/verify")}
+                            className="w-10 h-10 rounded-xl bg-secondary items-center justify-center"
+                        >
+                            <Ionicons name="qr-code-outline" size={20} color={BRAND.darkest} />
+                        </Pressable>
+                        <Button
+                            onPress={() => router.push("/(app)/sale/create")}
+                            className="flex-row items-center gap-2 h-10 px-4"
+                        >
+                            <Ionicons name="add-circle" size={18} color="hsl(0 0% 98%)" />
+                            <Text className="text-primary-foreground font-semibold text-sm">New Sale</Text>
+                        </Button>
+                    </View>
                 </View>
 
                 {/*  Time filter chips  */}
