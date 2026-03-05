@@ -397,8 +397,11 @@ export async function printReceiptBLE(
                 }
                 if (!d) return;
 
-                // Match on name: thermal printers commonly include these keywords
+                // Log all found devices for debugging
                 const name = (d.name ?? d.localName ?? "").toLowerCase();
+                console.log(`[BLE] Found device: ${d.name ?? d.localName ?? "(no name)"} [${d.id}]`);
+
+                // Match on name: thermal printers commonly include these keywords
                 const isPrinter =
                     name.includes("print") ||
                     name.includes("pos") ||
@@ -414,7 +417,7 @@ export async function printReceiptBLE(
                 if (isPrinter) {
                     clearTimeout(timer);
                     manager.stopDeviceScan();
-                    console.log(`[BLE] Found advertising printer: ${d.name ?? d.localName}`);
+                    console.log(`[BLE] ✓ Matched printer: ${d.name ?? d.localName}`);
                     resolve(d);
                 }
             });
