@@ -11,6 +11,7 @@ const createCustomerSchema = z.object({
   name: z.string().min(1, "Name is required"),
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
+  gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
   notes: z.string().optional(),
 });
 
@@ -71,6 +72,7 @@ const customers = new Hono<Env>()
         name: data.name,
         phone: data.phone || null,
         email: data.email || null,
+        gender: data.gender || null,
         notes: data.notes || null,
         orgId,
       },
@@ -95,6 +97,7 @@ const customers = new Hono<Env>()
         ...(data.name !== undefined && { name: data.name }),
         ...(data.phone !== undefined && { phone: data.phone || null }),
         ...(data.email !== undefined && { email: data.email || null }),
+        ...(data.gender !== undefined && { gender: data.gender || null }),
         ...(data.notes !== undefined && { notes: data.notes || null }),
       },
       include: { _count: { select: { sales: true } } },

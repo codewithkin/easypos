@@ -30,6 +30,12 @@ enum SaleStatus {
   REFUNDED
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
 enum Plan {
   starter
   growth
@@ -347,6 +353,7 @@ model Customer {
   name      String
   phone     String?
   email     String?
+  gender    Gender?
   notes     String?
   orgId     String
   createdAt DateTime @default(now())

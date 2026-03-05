@@ -26,7 +26,7 @@ const sales = new Hono<Env>()
     const userId = c.get("userId");
     const orgId = c.get("orgId");
     const branchId = c.get("branchId");
-    const { items, paymentMethod, tax, discount, amountTendered, note, deviceId } = c.req.valid("json");
+    const { items, paymentMethod, tax, discount, amountTendered, note, deviceId, customerId } = c.req.valid("json");
 
     if (!branchId) {
       return c.json({ error: "You must be assigned to a branch to create sales" }, 400);
@@ -85,6 +85,7 @@ const sales = new Hono<Env>()
         branchId,
         orgId,
         deviceId,
+        customerId: customerId ?? null,
         items: { create: saleItems },
       },
       include: { items: true },

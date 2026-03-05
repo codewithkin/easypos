@@ -1,357 +1,215 @@
-import { useState, useMemo, useCallback } from "react";
-import {
-    View,
-    FlatList,
-    Pressable,
-    TextInput,
-    RefreshControl,
-    useWindowDimensions,
-} from "react-native";
+﻿import { View, Pressable, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
 import { Text } from "@/components/ui/text";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthStore } from "@/store/auth";
-import { useApiQuery } from "@/hooks/use-api";
+import { BackButton } from "@/components/back-button";
+import { ProductsStep, ProductsFooterInfo } from "./steps/products-step";
+import { CustomerStep } from "./steps/customer-step";
+import { PaymentStep, paymentStepValid } from "./steps/payment-step";
+import { SummaryStep } from "./steps/summary-step";
+import {
+    useSaleStore,
+    cartTotal,
+    totalTendered,
+    SALE_STEPS,
+} from "@/store/sale";
+import { useApiPost } from "@/hooks/use-api";
 import { formatCurrency } from "@easypos/utils";
-import type { Product, Category } from "@easypos/types";
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/theme";
-import { BackButton } from "@/components/back-button";
+import { toast } from "@/lib/toast";
+import type { Sale, PaymentMethod } from "@easypos/types";
 
-interface CartItem {
-    product: Product;
-    quantity: number;
+// â”€â”€ Step metadata â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+const STEP_META = [
+    { title: "New Sale" },
+    { title: "Customer" },
+    { title: "Payment" },
+    { title: "Summary" },
+] as const;
+
+// â”€â”€ Helper types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+interface CreateCustomerBody {
+    name: string;
+    phone?: string;
+    gender?: "MALE" | "FEMALE" | "OTHER";
+}
+interface CreatedCustomer {
+    id: string;
+    name: string;
+    phone: string | null;
 }
 
-type ProductWithCategory = Product & { category?: { id: string; name: string } | null };
+interface CreateSaleBody {
+    items: { productId: string; quantity: number }[];
+    paymentMethod: PaymentMethod;
+    customerId?: string;
+    discount?: number;
+    amountTendered?: number;
+    note?: string;
+}
 
 export default function CreateSaleScreen() {
     const insets = useSafeAreaInsets();
-    const { width } = useWindowDimensions();
-    const isTablet = width >= 768;
-    const user = useAuthStore((s) => s.user);
+    const {
+        step,
+        cart,
+        customer,
+        payment,
+        nextStep,
+        prevStep,
+        clearCart,
+        reset,
+        setCustomer,
+    } = useSaleStore();
 
-    const [search, setSearch] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-    const [cart, setCart] = useState<CartItem[]>([]);
+    const subtotal = cartTotal(cart);
+    const discountAmount = payment.discount;
+    const finalTotal = Math.max(0, subtotal - discountAmount);
+    const tendered = totalTendered(payment.bills);
 
-    const { data: productsData, isLoading, refetch, isRefetching } = useApiQuery<{
-        items: ProductWithCategory[];
-        total: number;
-    }>({
-        queryKey: ["products", "active"],
-        path: "/products?pageSize=200&active=true",
-    });
+    // â”€â”€ Create customer (for new customers without an id) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    const { data: categoriesData } = useApiQuery<{ items: Category[] }>({
-        queryKey: ["categories"],
-        path: "/categories",
-    });
-
-    const products = productsData?.items ?? [];
-    const categories = categoriesData?.items ?? [];
-
-    const filtered = useMemo(() => {
-        return products.filter((p) => {
-            if (!p.isActive) return false;
-            if (selectedCategory && p.categoryId !== selectedCategory) return false;
-            if (search) {
-                const q = search.toLowerCase();
-                return (
-                    p.name.toLowerCase().includes(q) ||
-                    p.sku.toLowerCase().includes(q) ||
-                    (p.barcode ?? "").toLowerCase().includes(q)
-                );
-            }
-            return true;
+    const { mutate: createCustomer, isPending: isCreatingCustomer } =
+        useApiPost<CreatedCustomer, CreateCustomerBody>({
+            path: "/customers",
+            invalidateKeys: [["customers"]],
         });
-    }, [products, search, selectedCategory]);
 
-    const cartTotal = useMemo(
-        () => cart.reduce((sum, i) => sum + i.product.price * i.quantity, 0),
-        [cart],
-    );
-    const cartItemCount = useMemo(
-        () => cart.reduce((sum, i) => sum + i.quantity, 0),
-        [cart],
-    );
+    // â”€â”€ Create sale â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    const addToCart = useCallback((product: Product) => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setCart((prev) => {
-            const existing = prev.find((i) => i.product.id === product.id);
-            if (existing) {
-                return prev.map((i) =>
-                    i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i,
-                );
-            }
-            return [...prev, { product, quantity: 1 }];
-        });
-    }, []);
-
-    const updateQuantity = useCallback((productId: string, delta: number) => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setCart((prev) =>
-            prev
-                .map((i) =>
-                    i.product.id === productId ? { ...i, quantity: i.quantity + delta } : i,
-                )
-                .filter((i) => i.quantity > 0),
-        );
-    }, []);
-
-    function handleCheckout() {
-        if (cart.length === 0) return;
-        router.push({
-            pathname: "/(app)/checkout",
-            params: {
-                cart: JSON.stringify(
-                    cart.map((i) => ({
-                        productId: i.product.id,
-                        quantity: i.quantity,
-                        name: i.product.name,
-                        price: i.product.price,
-                    })),
-                ),
+    const { mutate: createSale, isPending: isCreatingSale } =
+        useApiPost<Sale, CreateSaleBody>({
+            path: "/sales",
+            invalidateKeys: [["sales"], ["reports"]],
+            onSuccess: (data) => {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                toast.success("Sale completed", `Receipt #${data.receiptNumber ?? ""}`);
+                reset();
+                router.dismissAll();
+                router.push(`/(app)/sale/${data.id}`);
+            },
+            onError: (err) => {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                toast.error("Sale failed", err.message);
             },
         });
+
+    const isPending = isCreatingCustomer || isCreatingSale;
+
+    // â”€â”€ Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    function handleBack() {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (step === 0) {
+            router.back();
+        } else {
+            prevStep();
+        }
     }
 
-    function getCartQuantity(productId: string): number {
-        return cart.find((i) => i.product.id === productId)?.quantity ?? 0;
+    function handleNext() {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        nextStep();
     }
 
-    // ── Product tile ──
-    function renderProduct({ item }: { item: ProductWithCategory }) {
-        const qty = getCartQuantity(item.id);
-        return (
-            <Pressable
-                onPress={() => addToCart(item)}
-                className={cn(
-                    "flex-1 m-1.5 p-3 rounded-xl border bg-card",
-                    qty > 0 ? "border-primary" : "border-border",
-                )}
-            >
-                <View className="flex-row items-start justify-between">
-                    <View className="flex-1 mr-2">
-                        <Text className="text-foreground font-medium text-sm" numberOfLines={2}>
-                            {item.name}
-                        </Text>
-                        {item.category && (
-                            <Text className="text-muted-foreground text-xs mt-0.5">
-                                {item.category.name}
-                            </Text>
-                        )}
-                    </View>
-                    {qty > 0 && (
-                        <View className="bg-primary w-6 h-6 rounded-full items-center justify-center">
-                            <Text className="text-primary-foreground text-xs font-bold">{qty}</Text>
-                        </View>
-                    )}
-                </View>
-                <Text className="text-foreground font-bold text-base mt-2">
-                    {formatCurrency(item.price, user?.org.currency)}
-                </Text>
-            </Pressable>
-        );
+    // â”€â”€ Complete sale â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    function handleComplete() {
+        if (isPending) return;
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+        // If customer is new (no id), create them first then complete
+        if (customer && !customer.id) {
+            createCustomer(
+                {
+                    name: customer.name,
+                    ...(customer.phone ? { phone: customer.phone } : {}),
+                    ...(customer.gender ? { gender: customer.gender } : {}),
+                },
+                {
+                    onSuccess: (created) => {
+                        setCustomer({ ...customer, id: created.id });
+                        doCreateSale(created.id);
+                    },
+                    onError: (err) => {
+                        toast.error("Could not create customer", err.message);
+                    },
+                },
+            );
+        } else {
+            doCreateSale(customer?.id);
+        }
     }
 
-    // ── Cart item row ──
-    function renderCartItem({ item }: { item: CartItem }) {
-        return (
-            <View className="flex-row items-center py-2.5">
-                <View className="flex-1 mr-2">
-                    <Text className="text-foreground text-sm font-medium" numberOfLines={1}>
-                        {item.product.name}
-                    </Text>
-                    <Text className="text-muted-foreground text-xs">
-                        {formatCurrency(item.product.price, user?.org.currency)} each
-                    </Text>
-                </View>
-                <View className="flex-row items-center gap-2">
-                    <Pressable
-                        onPress={() => updateQuantity(item.product.id, -1)}
-                        className="w-8 h-8 rounded-lg bg-secondary items-center justify-center"
-                    >
-                        <Ionicons name="remove" size={16} color={BRAND.darkest} />
-                    </Pressable>
-                    <Text className="text-foreground font-bold text-sm w-6 text-center">
-                        {item.quantity}
-                    </Text>
-                    <Pressable
-                        onPress={() => updateQuantity(item.product.id, 1)}
-                        className="w-8 h-8 rounded-lg bg-secondary items-center justify-center"
-                    >
-                        <Ionicons name="add" size={16} color={BRAND.darkest} />
-                    </Pressable>
-                </View>
-                <Text className="text-foreground font-bold text-sm w-20 text-right">
-                    {formatCurrency(item.product.price * item.quantity, user?.org.currency)}
-                </Text>
-            </View>
-        );
+    function doCreateSale(customerId?: string) {
+        const body: CreateSaleBody = {
+            items: cart.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+            paymentMethod: payment.method,
+        };
+
+        if (customerId) body.customerId = customerId;
+        if (payment.discount > 0) body.discount = payment.discount;
+        if (payment.method === "CASH" && tendered > 0) body.amountTendered = tendered;
+        if (payment.note.trim()) body.note = payment.note.trim();
+
+        createSale(body);
     }
 
-    // ── Tablet: side-by-side layout ──
-    if (isTablet) {
-        return (
-            <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-                {/* Header */}
-                <View className="flex-row items-center px-5 h-14 border-b border-border bg-card">
-                    <BackButton />
-                    <Text className="text-foreground font-bold text-lg flex-1">New Sale</Text>
-                </View>
+    // â”€â”€ Step-specific footer logic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-                <View className="flex-1 flex-row">
-                    {/* Left: Products */}
-                    <View className="flex-1 border-r border-border">
-                        <View className="px-4 py-3">
-                            {/* Search */}
-                            <View className="flex-row items-center bg-secondary rounded-xl px-3 h-11">
-                                <Ionicons name="search" size={18} color={BRAND.dark} />
-                                <TextInput
-                                    placeholder="Search products..."
-                                    placeholderTextColor={BRAND.dark}
-                                    value={search}
-                                    onChangeText={setSearch}
-                                    className="flex-1 ml-2 text-foreground text-sm"
-                                />
-                                {search.length > 0 && (
-                                    <Pressable onPress={() => setSearch("")}>
-                                        <Ionicons name="close-circle" size={18} color={BRAND.dark} />
-                                    </Pressable>
-                                )}
-                            </View>
+    const nextDisabled = (() => {
+        if (step === 0) return cart.length === 0;
+        if (step === 2) {
+            return !paymentStepValid(payment.method, tendered, finalTotal, payment.saveBalanceAsCredit);
+        }
+        return false;
+    })();
 
-                            {/* Categories */}
-                            {categories.length > 0 && (
-                                <FlatList
-                                    horizontal
-                                    data={[{ id: null as any, name: "All" }, ...categories]}
-                                    keyExtractor={(item) => item.id ?? "all"}
-                                    showsHorizontalScrollIndicator={false}
-                                    className="mt-3"
-                                    renderItem={({ item }) => (
-                                        <Pressable
-                                            onPress={() => setSelectedCategory(item.id)}
-                                            className={cn(
-                                                "px-4 py-1.5 rounded-full mr-2 border",
-                                                selectedCategory === item.id
-                                                    ? "bg-primary border-primary"
-                                                    : "bg-card border-border",
-                                            )}
-                                        >
-                                            <Text className={cn(
-                                                "text-sm font-medium",
-                                                selectedCategory === item.id
-                                                    ? "text-primary-foreground"
-                                                    : "text-foreground",
-                                            )}>
-                                                {item.name}
-                                            </Text>
-                                        </Pressable>
-                                    )}
-                                />
-                            )}
-                        </View>
+    // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-                        {isLoading ? (
-                            <View className="flex-row flex-wrap px-2.5">
-                                {Array.from({ length: 8 }).map((_, i) => (
-                                    <View key={i} className="w-1/3 p-1.5">
-                                        <Skeleton className="h-24 rounded-xl" />
-                                    </View>
-                                ))}
-                            </View>
-                        ) : (
-                            <FlatList
-                                data={filtered}
-                                keyExtractor={(item) => item.id}
-                                renderItem={renderProduct}
-                                numColumns={3}
-                                contentContainerStyle={{ paddingHorizontal: 6, paddingBottom: 20 }}
-                                refreshControl={
-                                    <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-                                }
-                                ListEmptyComponent={() => (
-                                    <View className="items-center py-12">
-                                        <Ionicons name="cube-outline" size={40} color={BRAND.mid} />
-                                        <Text className="text-muted-foreground mt-2">No products found</Text>
-                                    </View>
-                                )}
-                            />
-                        )}
-                    </View>
-
-                    {/* Right: Cart */}
-                    <View className="w-80 bg-card">
-                        <View className="px-4 pt-4 pb-2">
-                            <Text className="text-foreground font-bold text-lg">Cart</Text>
-                            <Text className="text-muted-foreground text-xs">
-                                {cartItemCount} {cartItemCount === 1 ? "item" : "items"}
-                            </Text>
-                        </View>
-                        <Separator />
-
-                        {cart.length === 0 ? (
-                            <View className="flex-1 items-center justify-center px-4">
-                                <Ionicons name="cart-outline" size={40} color={BRAND.mid} />
-                                <Text className="text-muted-foreground text-sm mt-2 text-center">
-                                    Tap products to add them to the cart
-                                </Text>
-                            </View>
-                        ) : (
-                            <FlatList
-                                data={cart}
-                                keyExtractor={(item) => item.product.id}
-                                renderItem={renderCartItem}
-                                contentContainerStyle={{ paddingHorizontal: 16 }}
-                                ItemSeparatorComponent={() => <Separator />}
-                            />
-                        )}
-
-                        {/* Cart total + checkout */}
-                        <View className="border-t border-border px-4 py-4" style={{ paddingBottom: insets.bottom + 12 }}>
-                            <View className="flex-row justify-between mb-3">
-                                <Text className="text-foreground font-bold text-lg">Total</Text>
-                                <Text className="text-foreground font-bold text-lg">
-                                    {formatCurrency(cartTotal, user?.org.currency)}
-                                </Text>
-                            </View>
-                            <Button
-                                onPress={handleCheckout}
-                                disabled={cart.length === 0}
-                                className="h-12 w-full"
-                            >
-                                <View className="flex-row items-center gap-2">
-                                    <Ionicons name="checkmark-circle" size={20} color="hsl(0 0% 98%)" />
-                                    <Text className="text-primary-foreground font-bold text-base">Checkout</Text>
-                                </View>
-                            </Button>
-                        </View>
-                    </View>
-                </View>
-            </View>
-        );
-    }
-
-    // ── Phone layout ──
     return (
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-            {/* Header */}
+            {/* â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <View className="flex-row items-center px-4 h-14 border-b border-border bg-card">
-                <BackButton />
-                <Text className="text-foreground font-bold text-lg flex-1">New Sale</Text>
-                {cart.length > 0 && (
+                <Pressable onPress={handleBack} className="mr-3 w-9 h-9 items-center justify-center">
+                    <Ionicons name="arrow-back" size={22} color={BRAND.darkest} />
+                </Pressable>
+
+                {/* Title + step dots */}
+                <View className="flex-1 flex-row items-center gap-2">
+                    <Text className="text-foreground font-bold text-base">
+                        {STEP_META[step].title}
+                    </Text>
+                    <View className="flex-row gap-1 ml-1">
+                        {SALE_STEPS.map((_, i) => (
+                            <View
+                                key={i}
+                                className={cn(
+                                    "rounded-full",
+                                    i === step
+                                        ? "w-4 h-2 bg-primary"
+                                        : i < step
+                                        ? "w-2 h-2 bg-primary/40"
+                                        : "w-2 h-2 bg-border",
+                                )}
+                            />
+                        ))}
+                    </View>
+                </View>
+
+                {/* Clear cart action on step 0 */}
+                {step === 0 && cart.length > 0 && (
                     <Pressable
-                        onPress={() => setCart([])}
+                        onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                            clearCart();
+                        }}
                         className="px-3 py-1"
                     >
                         <Text className="text-destructive text-sm font-medium">Clear</Text>
@@ -359,102 +217,107 @@ export default function CreateSaleScreen() {
                 )}
             </View>
 
-            {/* Search */}
-            <View className="px-4 py-3">
-                <View className="flex-row items-center bg-secondary rounded-xl px-3 h-11">
-                    <Ionicons name="search" size={18} color={BRAND.dark} />
-                    <TextInput
-                        placeholder="Search products..."
-                        placeholderTextColor={BRAND.dark}
-                        value={search}
-                        onChangeText={setSearch}
-                        className="flex-1 ml-2 text-foreground text-sm"
-                    />
-                    {search.length > 0 && (
-                        <Pressable onPress={() => setSearch("")}>
-                            <Ionicons name="close-circle" size={18} color={BRAND.dark} />
-                        </Pressable>
-                    )}
-                </View>
-
-                {/* Categories */}
-                {categories.length > 0 && (
-                    <FlatList
-                        horizontal
-                        data={[{ id: null as any, name: "All" }, ...categories]}
-                        keyExtractor={(item) => item.id ?? "all"}
-                        showsHorizontalScrollIndicator={false}
-                        className="mt-3"
-                        renderItem={({ item }) => (
-                            <Pressable
-                                onPress={() => setSelectedCategory(item.id)}
-                                className={cn(
-                                    "px-4 py-1.5 rounded-full mr-2 border",
-                                    selectedCategory === item.id
-                                        ? "bg-primary border-primary"
-                                        : "bg-card border-border",
-                                )}
-                            >
-                                <Text className={cn(
-                                    "text-sm font-medium",
-                                    selectedCategory === item.id
-                                        ? "text-primary-foreground"
-                                        : "text-foreground",
-                                )}>
-                                    {item.name}
-                                </Text>
-                            </Pressable>
-                        )}
-                    />
-                )}
+            {/* â”€â”€ Step body â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            <View className="flex-1">
+                {step === 0 && <ProductsStep />}
+                {step === 1 && <CustomerStep />}
+                {step === 2 && <PaymentStep />}
+                {step === 3 && <SummaryStep />}
             </View>
 
-            {/* Product grid */}
-            {isLoading ? (
-                <View className="flex-row flex-wrap px-2.5">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                        <View key={i} className="w-1/2 p-1.5">
-                            <Skeleton className="h-24 rounded-xl" />
+            {/* â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            <View
+                className="bg-card border-t border-border px-4 pt-3"
+                style={{ paddingBottom: insets.bottom + 12 }}
+            >
+                {/* Step 0: items info + Next */}
+                {step === 0 && (
+                    <View className="flex-row items-center gap-3">
+                        <View className="flex-1">
+                            <ProductsFooterInfo />
                         </View>
-                    ))}
-                </View>
-            ) : (
-                <FlatList
-                    data={filtered}
-                    keyExtractor={(item) => item.id}
-                    renderItem={renderProduct}
-                    numColumns={2}
-                    contentContainerStyle={{ paddingHorizontal: 6, paddingBottom: cart.length > 0 ? 100 : 20 }}
-                    refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
-                    ListEmptyComponent={() => (
-                        <View className="items-center py-12">
-                            <Ionicons name="cube-outline" size={40} color={BRAND.mid} />
-                            <Text className="text-muted-foreground mt-2">No products found</Text>
-                        </View>
-                    )}
-                />
-            )}
-
-            {/* Bottom cart bar */}
-            {cart.length > 0 && (
-                <View
-                    className="absolute bottom-0 left-0 right-0 bg-card border-t border-border px-4 py-3 flex-row items-center gap-3"
-                    style={{ paddingBottom: insets.bottom + 12 }}
-                >
-                    <View className="flex-1">
-                        <Text className="text-muted-foreground text-xs">
-                            {cartItemCount} {cartItemCount === 1 ? "item" : "items"}
-                        </Text>
-                        <Text className="text-foreground font-bold text-lg">
-                            {formatCurrency(cartTotal, user?.org.currency)}
-                        </Text>
+                        <Pressable
+                            onPress={handleNext}
+                            disabled={nextDisabled}
+                            className={cn(
+                                "h-12 px-6 rounded-xl bg-primary items-center justify-center flex-row gap-2",
+                                nextDisabled && "opacity-40",
+                            )}
+                        >
+                            <Text className="text-primary-foreground font-bold text-sm">Next</Text>
+                            <Ionicons name="chevron-forward" size={16} color="white" />
+                        </Pressable>
                     </View>
-                    <Button onPress={handleCheckout} className="h-12 px-6 flex-row items-center gap-2">
-                        <Ionicons name="checkmark-circle" size={20} color="hsl(0 0% 98%)" />
-                        <Text className="text-primary-foreground font-bold text-base">Checkout</Text>
-                    </Button>
-                </View>
-            )}
+                )}
+
+                {/* Step 1 (Customer): Skip | Next */}
+                {step === 1 && (
+                    <View className="flex-row items-center gap-2">
+                        <Pressable
+                            onPress={() => {
+                                setCustomer(null);
+                                handleNext();
+                            }}
+                            className="flex-1 h-12 rounded-xl border border-border items-center justify-center"
+                        >
+                            <Text className="text-muted-foreground font-medium text-sm">Skip</Text>
+                        </Pressable>
+                        <Pressable
+                            onPress={handleNext}
+                            className="flex-1 h-12 rounded-xl bg-primary items-center justify-center flex-row gap-2"
+                        >
+                            <Text className="text-primary-foreground font-bold text-sm">Next</Text>
+                            <Ionicons name="chevron-forward" size={16} color="white" />
+                        </Pressable>
+                    </View>
+                )}
+
+                {/* Step 2 (Payment): total + Review */}
+                {step === 2 && (
+                    <View className="flex-row items-center gap-3">
+                        <View className="flex-1">
+                            <Text className="text-muted-foreground text-xs">Total</Text>
+                            <Text className="text-foreground font-bold text-base">
+                                {formatCurrency(finalTotal)}
+                            </Text>
+                        </View>
+                        <Pressable
+                            onPress={handleNext}
+                            disabled={nextDisabled}
+                            className={cn(
+                                "h-12 px-6 rounded-xl bg-primary items-center justify-center flex-row gap-2",
+                                nextDisabled && "opacity-40",
+                            )}
+                        >
+                            <Text className="text-primary-foreground font-bold text-sm">Review</Text>
+                            <Ionicons name="chevron-forward" size={16} color="white" />
+                        </Pressable>
+                    </View>
+                )}
+
+                {/* Step 3 (Summary): Complete Sale */}
+                {step === 3 && (
+                    <Pressable
+                        onPress={handleComplete}
+                        disabled={isPending}
+                        className={cn(
+                            "h-14 rounded-xl bg-primary items-center justify-center flex-row gap-2",
+                            isPending && "opacity-70",
+                        )}
+                    >
+                        {isPending ? (
+                            <ActivityIndicator color="white" size="small" />
+                        ) : (
+                            <>
+                                <Ionicons name="checkmark-circle" size={22} color="white" />
+                                <Text className="text-primary-foreground font-bold text-base">
+                                    Complete Sale
+                                </Text>
+                            </>
+                        )}
+                    </Pressable>
+                )}
+            </View>
         </View>
     );
 }

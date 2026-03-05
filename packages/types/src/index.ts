@@ -100,7 +100,7 @@ export const productSchema = z.object({
   id: z.string(),
   name: z.string(),
   sku: z.string(),
-  barcode: z.string().nullable(),
+  imageUrl: z.string().nullable().optional(),
   price: z.number(),
   cost: z.number().nullable(),
   isActive: z.boolean(),
@@ -271,6 +271,7 @@ export const createSaleRequestSchema = z.object({
     )
     .min(1),
   paymentMethod: paymentMethodSchema,
+  customerId: z.string().optional(),
   tax: z.number().min(0).optional(),
   discount: z.number().min(0).optional(),
   amountTendered: z.number().positive().optional(),

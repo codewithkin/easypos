@@ -11,7 +11,6 @@ export default function AppLayout() {
     return (
         <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
             <Stack.Screen name="(drawer)" />
-            <Stack.Screen name="checkout" options={{ presentation: "modal" }} />
             <Stack.Screen name="sale/create" />
             <Stack.Screen name="sale/[id]" />
             <Stack.Screen name="products/add" />
