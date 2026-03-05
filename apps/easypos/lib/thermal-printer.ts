@@ -219,6 +219,9 @@ export function buildEscPosReceipt(data: ReceiptData): Uint8Array {
     c("SCAN TO VERIFY");
     blank();
 
+    // Center the QR code
+    out.push(new Uint8Array([ESC, 0x61, 0x01])); // center
+
     const qrData = strToBytes(data.verifyUrl);
     const storeLen = qrData.length + 3;
     const pL = storeLen & 0xff;
@@ -229,6 +232,9 @@ export function buildEscPosReceipt(data: ReceiptData): Uint8Array {
     out.push(new Uint8Array([GS, 0x28, 0x6b, pL, pH, 0x31, 0x50, 0x30]));            // store
     out.push(qrData);
     out.push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30]));        // print
+
+    // Reset to left align
+    out.push(new Uint8Array([ESC, 0x61, 0x00]));
 
     // ── FOOTER ──────────────────────────────────────────────────
     blank();
