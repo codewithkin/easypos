@@ -105,6 +105,7 @@ export interface ReceiptData {
     createdAt: string;       // formatted date/time string
     cashierName: string;
     customerName?: string;
+    customerPhone?: string;
     items: { name: string; qty: number; unitPrice: number; total: number }[];
     subtotal: number;
     discount: number;
@@ -172,6 +173,9 @@ export function buildEscPosReceipt(data: ReceiptData): Uint8Array {
     line("Cashier: " + data.cashierName.slice(0, 22));
     if (data.customerName) {
         line("Customer: " + data.customerName.slice(0, 21));
+        if (data.customerPhone) {
+            line("Phone: " + data.customerPhone.slice(0, 25));
+        }
     }
     dashes();
 
@@ -240,10 +244,14 @@ export function buildEscPosReceipt(data: ReceiptData): Uint8Array {
     blank();
     equals();
     c("THANK YOU!");
-    c("For shopping at");
-    c(data.orgName);
-    blank();
-    c("We appreciate your business");
+    if (data.customerName) {
+        c("Thank you " + data.customerName + "!");
+    } else {
+        c("For shopping at");
+        c(data.orgName);
+        blank();
+        c("We appreciate your business");
+    }
     equals();
     blank();
 

@@ -35,7 +35,7 @@ type SaleDetail = Sale & {
     items: (SaleItem & { product?: { name: string } })[];
     cashier: { id: string; name: string; role: string };
     branch: { id: string; name: string };
-    customer?: { id: string; name: string } | null;
+    customer?: { id: string; name: string; phone?: string } | null;
 };
 
 const SERVER_BASE = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://localhost:3000";
@@ -95,6 +95,7 @@ export default function SaleDetailScreen() {
                 createdAt: formatDateTime(sale.createdAt),
                 cashierName: sale.cashier.name,
                 customerName: sale.customer?.name,
+                customerPhone: sale.customer?.phone,
                 items: sale.items.map((i) => ({
                     name: i.productName,
                     qty: i.quantity,
