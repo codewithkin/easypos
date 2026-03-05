@@ -134,7 +134,7 @@ function fmt(amount: number, currency = "$"): string {
 
 export function buildEscPosReceipt(data: ReceiptData): Uint8Array {
     const curr = data.currency ?? "$";
-    const W = 32; // 58mm printer char width (normal mode)
+    const W = 32; // 58mm printer width
     const lines: Uint8Array[] = [];
 
     function push(bytes: Uint8Array) {
@@ -143,91 +143,47 @@ export function buildEscPosReceipt(data: ReceiptData): Uint8Array {
     function text(s: string) {
         push(strToBytes(s + "\n"));
     }
-    function dashedLine() {
-        text("-".repeat(W));
-    }
-    function doubleLine() {
-        text("=".repeat(W));
-    }
-    function blank() {
-        text("");
-    }
-
-    // ESC/POS helpers
-    const CMD = {
-        init:         new Uint8Array([ESC, 0x40]),            // reset printer
-        centerOn:     new Uint8Array([ESC, 0x61, 0x01]),      // center align
-        leftOn:       new Uint8Array([ESC, 0x61, 0x00]),      // left align
-        boldOn:       new Uint8Array([ESC, 0x45, 0x01]),      // bold on
-        boldOff:      new Uint8Array([ESC, 0x45, 0x00]),      // bold off
-        doubleOn:     new Uint8Array([ESC, 0x21, 0x10]),      // double height
-        doubleWideOn: new Uint8Array([ESC, 0x21, 0x30]),      // double height + double width
-        normal:       new Uint8Array([ESC, 0x21, 0x00]),      // normal size
-        feed4:        new Uint8Array([ESC, 0x64, 0x04]),      // feed 4 lines
-        cut:          new Uint8Array([GS, 0x56, 0x41, 0x00]), // partial cut
-    };
 
     // ── Initialize ──────────────────────────────────────────────
-    push(CMD.init);
+    push(new Uint8Array([ESC, 0x40])); // reset
 
-    // ============================================================
     // ── STORE HEADER (centered) ─────────────────────────────────
-    // ============================================================
-    push(CMD.centerOn);
+    push(new Uint8Array([ESC, 0x61, 0x01])); // center
+    text(center(data.orgName.toUpperCase(), W));
+    text(center(data.branchName, W));
+    text(center(data.createdAt, W));
+    text("=".repeat(W));
 
-    push(CMD.doubleOn);
-    push(CMD.boldOn);
-    text(data.orgName.toUpperCase());
-    push(CMD.boldOff);
-    push(CMD.normal);
+    // ── RECEIPT # (centered) ────────────────────────────────────
+    text(center("Receipt #" + data.receiptNumber, W));
+    text("");
 
-    text(data.branchName);
-    blank();
-    text(data.createdAt);
-    doubleLine();
+    // ── DETAILS (left align) ────────────────────────────────────
+    push(new Uint8Array([ESC, 0x61, 0x00])); // left
+    text("Cashier: " + data.cashierName.slice(0, 20));
 
-    // ============================================================
-    // ── RECEIPT # ───────────────────────────────────────────────
-    // ============================================================
-    push(CMD.leftOn);
-
-    push(CMD.boldOn);
-    text("Receipt #" + data.receiptNumber);
-    push(CMD.boldOff);
-
-    blank();
-    text(leftRight("Cashier:", data.cashierName.slice(0, 20), W));
-
-    // ── Customer details ────────────────────────────────────────
     if (data.customerName) {
-        dashedLine();
-        push(CMD.boldOn);
-        text("CUSTOMER");
-        push(CMD.boldOff);
-        text(leftRight("Name:", data.customerName.slice(0, 22), W));
+        text("Customer: " + data.customerName.slice(0, 20));
     }
 
-    doubleLine();
+    text("-".repeat(W));
+    text("");
 
-    // ============================================================
     // ── ITEMS ───────────────────────────────────────────────────
-    // ============================================================
-    blank();
-    push(CMD.boldOn);
-    text(leftRight("ITEM", "AMOUNT", W));
-    push(CMD.boldOff);
-    dashedLine();
-
     for (const item of data.items) {
-        text(item.name.slice(0, W));
-        text(leftRight("  " + item.qty + " x " + fmt(item.unitPrice, curr), fmt(item.total, curr), W));
+        const itemName = item.name.slice(0, W - 8);
+        const amount = fmt(item.total, curr);
+        const padding = W - itemName.length - amount.length;
+        text(itemName + " ".repeat(Math.max(1, padding)) + amount);
+        
+        const qtyLine = `  ${item.qty} x ${fmt(item.unitPrice, curr)}`;
+        text(qtyLine);
     }
 
-    dashedLine();
+    text("-".repeat(W));
+    text("");
 
-    // ============================================================
-    // ── SUMMARY ─────────────────────────────────────────────────
-    // ============================================================
+    // ── TOTALS ──────────────────────────────────────────────────
     text(leftRight("Subtotal", fmt(data.subtotal, curr), W));
 
     if (data.discount > 0) {
@@ -238,9 +194,7 @@ export function buildEscPosReceipt(data: ReceiptData): Uint8Array {
         text(leftRight("Tax", fmt(data.tax, curr), W));
     }
 
-    dashedLine();
-
-    // ── Payment ─────────────────────────────────────────────────
+    text("-".repeat(W));
     text(leftRight("Payment", data.paymentMethod, W));
 
     if (data.amountTendered !== undefined) {
@@ -248,83 +202,49 @@ export function buildEscPosReceipt(data: ReceiptData): Uint8Array {
         text(leftRight("Change", fmt(data.change ?? 0, curr), W));
     }
 
-    // ── Note ────────────────────────────────────────────────────
+    // ── NOTE ────────────────────────────────────────────────────
     if (data.note?.trim()) {
-        dashedLine();
-        push(CMD.boldOn);
-        text("Note:");
-        push(CMD.boldOff);
-        const noteLines = data.note.trim().match(/.{1,30}/g) || [];
-        for (const line of noteLines.slice(0, 3)) {
-            text(line);
-        }
+        text("-".repeat(W));
+        text("Note: " + data.note.trim().slice(0, 27));
     }
 
-    doubleLine();
+    // ── TOTAL (big) ─────────────────────────────────────────────
+    text("=".repeat(W));
+    text("");
+    push(new Uint8Array([ESC, 0x61, 0x01])); // center
+    text(center("TOTAL: " + fmt(data.total, curr), W));
+    text("");
 
-    // ============================================================
-    // ── TOTAL (big & bold) ──────────────────────────────────────
-    // ============================================================
-    blank();
-    push(CMD.centerOn);
-    push(CMD.doubleOn);
-    push(CMD.boldOn);
-    text("TOTAL: " + fmt(data.total, curr));
-    push(CMD.boldOff);
-    push(CMD.normal);
-    blank();
-
-    // ============================================================
     // ── QR CODE ─────────────────────────────────────────────────
-    // ============================================================
-    doubleLine();
-    blank();
-    push(CMD.boldOn);
-    text("SCAN TO VERIFY");
-    push(CMD.boldOff);
-    blank();
+    text("=".repeat(W));
+    text(center("SCAN TO VERIFY", W));
+    text("");
 
-    // GS ( k — QR code commands
     const qrData = strToBytes(data.verifyUrl);
     const storeLen = qrData.length + 3;
     const pL = storeLen & 0xff;
     const pH = (storeLen >> 8) & 0xff;
-    push(new Uint8Array([GS, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00])); // model 2
-    push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, 0x06]));        // size 6
-    push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x31]));        // error correction L
+    push(new Uint8Array([GS, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00])); // QR model 2
+    push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, 0x04]));        // size 4
+    push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x30]));        // error correction
     push(new Uint8Array([GS, 0x28, 0x6b, pL, pH, 0x31, 0x50, 0x30]));            // store data
     push(qrData);
     push(new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30]));        // print QR
 
-    // ============================================================
-    // ── THANK YOU FOOTER ────────────────────────────────────────
-    // ============================================================
-    blank();
-    doubleLine();
-    blank();
-
-    push(CMD.doubleOn);
-    push(CMD.boldOn);
-    text("THANK YOU!");
-    push(CMD.boldOff);
-    push(CMD.normal);
-
-    blank();
-    text("For shopping at");
-    push(CMD.boldOn);
-    text(data.orgName);
-    push(CMD.boldOff);
-    blank();
-    text("We appreciate your business");
-    text("Visit us again soon!");
-    blank();
-    doubleLine();
-
-    push(CMD.leftOn);
+    // ── FOOTER ──────────────────────────────────────────────────
+    text("");
+    text("=".repeat(W));
+    text(center("THANK YOU!", W));
+    text(center("For shopping at", W));
+    text(center(data.orgName, W));
+    text("");
+    text(center("We appreciate your business", W));
+    text("=".repeat(W));
+    text("");
 
     // ── Feed + cut ──────────────────────────────────────────────
-    push(CMD.feed4);
-    push(CMD.cut);
+    push(new Uint8Array([ESC, 0x64, 0x03])); // feed 3 lines
+    push(new Uint8Array([GS, 0x56, 0x41, 0x00])); // partial cut
 
     return concat(...lines);
 }
