@@ -279,25 +279,39 @@ async function findPrintCharacteristic(
     return null;
 }
 
-/** Request Bluetooth permissions on Android 12+ */
+/** Request Bluetooth permissions on Android */
 async function requestBlePermissions(): Promise<boolean> {
     if (Platform.OS !== "android") {
-        return true; // iOS handles permissions differently
+        return true; // iOS handles permissions via Info.plist + the expo-camera/ble-plx plugins
     }
 
     try {
-        // Android 12+ requires BLUETOOTH_SCAN and BLUETOOTH_CONNECT permissions
-        const result = await PermissionsAndroid.requestMultiple([
-            PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-            PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-        ]);
-
-        return (
-            result[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] ===
-                PermissionsAndroid.RESULTS.GRANTED &&
-            result[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] ===
-                PermissionsAndroid.RESULTS.GRANTED
-        );
+        if (Number(Platform.Version) >= 31) {
+            // Android 12+ (API 31+): needs BLUETOOTH_SCAN + BLUETOOTH_CONNECT
+            const result = await PermissionsAndroid.requestMultiple([
+                PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+                PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+            ]);
+            return (
+                result[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] ===
+                    PermissionsAndroid.RESULTS.GRANTED &&
+                result[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] ===
+                    PermissionsAndroid.RESULTS.GRANTED
+            );
+        } else {
+            // Android < 12 (API < 31): BLE scanning requires ACCESS_FINE_LOCATION
+            const result = await PermissionsAndroid.request(
+                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                {
+                    title: "Location Permission Required",
+                    message:
+                        "Bluetooth printing requires location access on this Android version to scan for nearby printers.",
+                    buttonPositive: "Allow",
+                    buttonNegative: "Deny",
+                },
+            );
+            return result === PermissionsAndroid.RESULTS.GRANTED;
+        }
     } catch (err) {
         console.error("Error requesting BLE permissions:", err);
         return false;

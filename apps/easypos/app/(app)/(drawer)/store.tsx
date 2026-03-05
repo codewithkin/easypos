@@ -61,9 +61,12 @@ function SettingsItem({ icon, label, subtitle, onPress, destructive, right }: Se
 
 function SectionHeader({ title }: { title: string }) {
     return (
-        <Text className="text-muted-foreground text-xs uppercase tracking-wider px-5 mb-1 mt-6">
-            {title}
-        </Text>
+        <View className="flex-row items-center gap-2 px-5 mb-1 mt-6">
+            <View className="w-1.5 h-3.5 rounded-full bg-primary" />
+            <Text className="text-muted-foreground text-xs uppercase tracking-wider">
+                {title}
+            </Text>
+        </View>
     );
 }
 

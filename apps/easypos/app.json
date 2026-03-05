@@ -37,8 +37,14 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to upload a business logo.",
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to upload images.",
           "cameraPermission": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to use your camera to scan QR codes and verify receipts."
         }
       ],
       "react-native-ble-plx"

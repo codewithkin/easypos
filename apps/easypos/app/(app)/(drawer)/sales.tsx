@@ -146,7 +146,10 @@ export default function SalesScreen() {
                 <View className="flex-row items-center justify-between">
                     <View className="flex-1 mr-3">
                         <View className="flex-row items-center gap-2 flex-wrap">
-                            <Text className="text-foreground font-medium text-sm">
+                            <Text className={cn(
+                                "text-sm font-semibold",
+                                !isVoided && !isCredit ? "text-primary" : "text-foreground",
+                            )}>
                                 #{item.receiptNumber}
                             </Text>
                             {isCredit && !isVoided && (
@@ -268,7 +271,7 @@ export default function SalesScreen() {
                             <Text className="text-muted-foreground text-[10px] uppercase tracking-wider">
                                 Revenue
                             </Text>
-                            <Text className="text-foreground text-lg font-bold mt-0.5" numberOfLines={1}>
+                            <Text className="text-primary text-lg font-bold mt-0.5" numberOfLines={1}>
                                 {isLoading ? "\u2014" : formatCurrency(stats.totalRevenue, user?.org.currency)}
                             </Text>
                             <Text className="text-muted-foreground text-[10px] mt-0.5">

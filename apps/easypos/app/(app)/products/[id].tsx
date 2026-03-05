@@ -230,7 +230,7 @@ export default function EditProductScreen() {
                             <Pressable
                                 onPress={handlePickImage}
                                 disabled={imageUploading}
-                                className="w-32 h-32 rounded-2xl bg-secondary border-2 border-dashed border-border items-center justify-center overflow-hidden"
+                                className="w-32 h-32 rounded-2xl bg-secondary border-2 border-dashed border-primary/40 items-center justify-center overflow-hidden"
                             >
                                 {imageUploading ? (
                                     <ActivityIndicator color={BRAND.brand} />

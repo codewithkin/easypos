@@ -165,7 +165,7 @@ export default function DashboardScreen() {
                                     <View className={cn("w-9 h-9 rounded-xl items-center justify-center mb-3", stat.color)}>
                                         <Ionicons name={stat.icon} size={18} color={BRAND.dark} />
                                     </View>
-                                    <Text className="text-foreground font-bold text-xl">{stat.value}</Text>
+                                    <Text className={cn("font-bold text-xl", stat.textColor)}>{stat.value}</Text>
                                     <Text className="text-muted-foreground text-xs mt-0.5">{stat.label}</Text>
                                 </View>
                             ))}
@@ -251,7 +251,11 @@ export default function DashboardScreen() {
                                         </View>
                                         <Text className={cn(
                                             "font-bold text-base",
-                                            sale.status === "COMPLETED" ? "text-foreground" : "text-muted-foreground line-through",
+                                            sale.status !== "COMPLETED"
+                                                ? "text-muted-foreground line-through"
+                                                : sale.paymentMethod === "CREDIT"
+                                                    ? "text-amber-600"
+                                                    : "text-primary",
                                         )}>
                                             {formatCurrency(sale.total, user?.org.currency)}
                                         </Text>

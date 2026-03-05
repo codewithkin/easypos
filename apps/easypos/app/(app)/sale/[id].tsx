@@ -360,19 +360,19 @@ export default function SaleDetailScreen() {
                         onPress={handlePrint}
                         disabled={isPrinting}
                         className={cn(
-                            "flex-1 h-12 rounded-xl border border-border items-center justify-center flex-row gap-2",
+                            "flex-1 h-12 rounded-xl border border-primary/40 bg-primary/5 items-center justify-center flex-row gap-2",
                             isPrinting && "opacity-60",
                         )}
                     >
                         {isPrinting ? (
                             <>
-                                <ActivityIndicator size="small" color={BRAND.dark} />
-                                <Text className="text-muted-foreground text-sm font-medium">Printing…</Text>
+                                <ActivityIndicator size="small" color={BRAND.brand} />
+                                <Text className="text-primary text-sm font-medium">Printing…</Text>
                             </>
                         ) : (
                             <>
-                                <Ionicons name="print-outline" size={18} color={BRAND.dark} />
-                                <Text className="text-foreground font-medium text-sm">Print</Text>
+                                <Ionicons name="print-outline" size={18} color={BRAND.brand} />
+                                <Text className="text-primary font-medium text-sm">Print</Text>
                             </>
                         )}
                     </Pressable>
