@@ -405,6 +405,7 @@ export async function printReceiptBLE(
                 const isPrinter =
                     name.includes("print") ||
                     name.includes("pos") ||
+                    name.includes("bt-") ||
                     name.includes("cashino") ||
                     name.includes("rongta") ||
                     name.includes("xprinter") ||
