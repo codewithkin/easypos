@@ -14,7 +14,7 @@
  */
 
 import { BleManager, type Device, type Characteristic } from "react-native-ble-plx";
-import { Platform } from "react-native";
+import { Platform, PermissionsAndroid } from "react-native";
 import { Buffer } from "buffer";
 
 // ── ESC/POS constants ────────────────────────────────────────────────
@@ -279,12 +279,48 @@ async function findPrintCharacteristic(
     return null;
 }
 
+/** Request Bluetooth permissions on Android 12+ */
+async function requestBlePermissions(): Promise<boolean> {
+    if (Platform.OS !== "android") {
+        return true; // iOS handles permissions differently
+    }
+
+    try {
+        // Android 12+ requires BLUETOOTH_SCAN and BLUETOOTH_CONNECT permissions
+        const result = await PermissionsAndroid.requestMultiple([
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        ]);
+
+        return (
+            result[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] ===
+                PermissionsAndroid.RESULTS.GRANTED &&
+            result[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] ===
+                PermissionsAndroid.RESULTS.GRANTED
+        );
+    } catch (err) {
+        console.error("Error requesting BLE permissions:", err);
+        return false;
+    }
+}
+
 /** Scan for a nearby thermal printer, connect, print receipt, disconnect. */
 export async function printReceiptBLE(
     receipt: Uint8Array,
     timeoutMs = 15_000,
 ): Promise<{ printerName: string }> {
     const manager = getManager();
+
+    // Request Bluetooth permissions on Android 12+
+    if (Platform.OS === "android") {
+        const hasPermissions = await requestBlePermissions();
+        if (!hasPermissions) {
+            throw new PrinterError(
+                "Bluetooth permissions were denied. Please grant BLUETOOTH_SCAN and BLUETOOTH_CONNECT permissions in Settings.",
+                "PERMISSION_DENIED",
+            );
+        }
+    }
 
     // Check Bluetooth state
     const state = await manager.state();

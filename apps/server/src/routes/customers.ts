@@ -11,7 +11,7 @@ const createCustomerSchema = z.object({
   name: z.string().min(1, "Name is required"),
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
-  gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
+  gender: z.enum(["MALE", "FEMALE"]).optional(),
   notes: z.string().optional(),
 });
 

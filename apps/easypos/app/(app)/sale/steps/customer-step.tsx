@@ -19,12 +19,11 @@ import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/theme";
 import { toast } from "@/lib/toast";
 
-type Gender = "MALE" | "FEMALE" | "OTHER";
+type Gender = "MALE" | "FEMALE";
 
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
     { value: "MALE", label: "Male" },
     { value: "FEMALE", label: "Female" },
-    { value: "OTHER", label: "Other" },
 ];
 
 interface ExistingCustomer {

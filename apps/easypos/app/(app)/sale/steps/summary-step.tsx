@@ -17,7 +17,6 @@ import { cn } from "@/lib/utils";
 const GENDER_LABELS: Record<string, string> = {
     MALE: "Male",
     FEMALE: "Female",
-    OTHER: "Other",
 };
 
 /** Step 4 — Full sale summary before confirming */

@@ -37,7 +37,7 @@ const STEP_META = [
 interface CreateCustomerBody {
     name: string;
     phone?: string;
-    gender?: "MALE" | "FEMALE" | "OTHER";
+    gender?: "MALE" | "FEMALE";
 }
 interface CreatedCustomer {
     id: string;

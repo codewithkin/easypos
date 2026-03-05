@@ -14,7 +14,7 @@ export interface SaleCustomer {
     id?: string;           // undefined = new customer (will be created inline)
     name: string;
     phone?: string;
-    gender?: "MALE" | "FEMALE" | "OTHER";
+    gender?: "MALE" | "FEMALE";
 }
 
 // ── Payment details ────────────────────────────────────────────────
