@@ -31,6 +31,7 @@ const NAV_ITEMS: NavItem[] = [
     { name: "products", label: "Products", icon: "cube-outline", activeIcon: "cube" },
     { name: "customers", label: "Customers", icon: "people-outline", activeIcon: "people" },
     { name: "store", label: "My Store", icon: "storefront-outline", activeIcon: "storefront" },
+    { name: "test", label: "System Test", icon: "flask-outline", activeIcon: "flask", adminOnly: true },
 ];
 
 function CustomDrawerContent(props: DrawerContentComponentProps) {
@@ -189,6 +190,7 @@ export default function DrawerLayout() {
             <Drawer.Screen name="products" options={{ title: "Products" }} />
             <Drawer.Screen name="customers" options={{ title: "Customers" }} />
             <Drawer.Screen name="store" options={{ title: "My Store" }} />
+            <Drawer.Screen name="test" options={{ title: "System Test" }} />
         </Drawer>
     );
 }

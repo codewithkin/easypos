@@ -24,12 +24,8 @@ import {
 import type { Sale, SaleItem } from "@easypos/types";
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/theme";
-import {
-    printReceiptBLE,
-    buildEscPosReceipt,
-    PrinterError,
-    type ReceiptData,
-} from "@/lib/thermal-printer";
+import { usePrint } from "@/hooks/use-print";
+import { type ReceiptData } from "@/lib/thermal-printer";
 
 type SaleDetail = Sale & {
     items: (SaleItem & { product?: { name: string } })[];
@@ -45,7 +41,14 @@ export default function SaleDetailScreen() {
     const insets = useSafeAreaInsets();
     const user = useAuthStore((s) => s.user);
     const [showVoidDialog, setShowVoidDialog] = useState(false);
-    const [isPrinting, setIsPrinting] = useState(false);
+
+    const { mutate: recordPrint } = useApiPost<unknown, { printerName?: string }>({
+        path: `/sales/${id}/print`,
+    });
+
+    const { print, isPrinting } = usePrint({
+        onSuccess: (printerName) => recordPrint({ printerName }),
+    });
 
     const { data: sale, isLoading } = useApiQuery<SaleDetail>({
         queryKey: ["sale", id],
@@ -81,77 +84,33 @@ export default function SaleDetailScreen() {
     }
 
     async function handlePrint() {
-        if (!sale || isPrinting) return;
-        setIsPrinting(true);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-        try {
-            const verifyUrl = `easypos://verify?id=${sale.id}`;
-
-            const receiptData: ReceiptData = {
-                orgName: user?.org?.name ?? "EasyPOS",
-                branchName: sale.branch.name,
-                receiptNumber: sale.receiptNumber,
-                createdAt: formatDateTime(sale.createdAt),
-                cashierName: sale.cashier.name,
-                customerName: sale.customer?.name,
-                customerPhone: sale.customer?.phone,
-                items: sale.items.map((i) => ({
-                    name: i.productName,
-                    qty: i.quantity,
-                    unitPrice: i.unitPrice,
-                    total: i.total,
-                })),
-                subtotal: sale.subtotal,
-                discount: sale.discount,
-                tax: sale.tax,
-                total: sale.total,
-                paymentMethod: PAYMENT_METHOD_LABELS[sale.paymentMethod],
-                amountTendered: sale.amountTendered ?? undefined,
-                change: sale.change ?? undefined,
-                note: sale.note ?? undefined,
-                currency: user?.org?.currency,
-                verifyUrl,
-            };
-
-            const bytes = buildEscPosReceipt(receiptData);
-            const { printerName } = await printReceiptBLE(bytes);
-
-            recordPrint({ printerName });
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            toast.success("Receipt printed", `Sent to ${printerName}`);
-        } catch (err: any) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-
-            if (err instanceof PrinterError) {
-                switch (err.code) {
-                    case "BLUETOOTH_OFF":
-                        toast.error("Bluetooth is off", "Turn on Bluetooth and try again.");
-                        break;
-                    case "PERMISSION_DENIED":
-                        toast.error("Permission denied", "Grant Bluetooth access in Settings.");
-                        break;
-                    case "NO_PRINTER_FOUND":
-                        toast.error("Printer not found", "Ensure printer is on, paired via Bluetooth, and in range.");
-                        break;
-                    case "CONNECTION_FAILED":
-                        toast.error("Connection failed", err.message);
-                        break;
-                    case "NO_PRINT_CHARACTERISTIC":
-                        toast.error("Unsupported printer", err.message);
-                        break;
-                    case "WRITE_FAILED":
-                        toast.error("Print failed", "Data could not be sent to the printer.");
-                        break;
-                    default:
-                        toast.error("Print error", err.message);
-                }
-            } else {
-                toast.error("Print error", err?.message ?? "Unknown error");
-            }
-        } finally {
-            setIsPrinting(false);
-        }
+        if (!sale) return;
+        const receiptData: ReceiptData = {
+            orgName: user?.org?.name ?? "EasyPOS",
+            branchName: sale.branch.name,
+            receiptNumber: sale.receiptNumber,
+            createdAt: formatDateTime(sale.createdAt),
+            cashierName: sale.cashier.name,
+            customerName: sale.customer?.name,
+            customerPhone: sale.customer?.phone,
+            items: sale.items.map((i) => ({
+                name: i.productName,
+                qty: i.quantity,
+                unitPrice: i.unitPrice,
+                total: i.total,
+            })),
+            subtotal: sale.subtotal,
+            discount: sale.discount,
+            tax: sale.tax,
+            total: sale.total,
+            paymentMethod: PAYMENT_METHOD_LABELS[sale.paymentMethod],
+            amountTendered: sale.amountTendered ?? undefined,
+            change: sale.change ?? undefined,
+            note: sale.note ?? undefined,
+            currency: user?.org?.currency,
+            verifyUrl: `easypos://verify?id=${sale.id}`,
+        };
+        await print(receiptData);
     }
 
     // ── Loading state ─────────────────────────────────────────────
