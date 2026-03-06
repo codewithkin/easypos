@@ -308,26 +308,34 @@ export const billingWebhook = new Hono()
   // Query param: ?reference=<paymentId>
   // Then we generate HTML that opens the deep link
   .get("/billing/callback", async (c) => {
+    console.log("[CALLBACK] Received request");
     const reference = c.req.query("reference");
+    console.log("[CALLBACK] Reference:", reference);
 
     if (!reference) {
+      console.log("[CALLBACK] Missing reference");
       return c.html("<h1>Error: Missing payment reference</h1>", 400);
     }
 
-    const payment = await db.intermediatePayment.findUnique({
-      where: { id: reference },
-    });
+    try {
+      const payment = await db.intermediatePayment.findUnique({
+        where: { id: reference },
+      });
 
-    if (!payment) {
-      return c.html("<h1>Error: Payment not found</h1>", 404);
-    }
+      if (!payment) {
+        console.log("[CALLBACK] Payment not found:", reference);
+        return c.html("<h1>Error: Payment not found</h1>", 404);
+      }
 
-    // Try to poll Paynow for the latest status
-    if (payment.pollUrl && !payment.paid) {
-      try {
-        const status = await pollPaynowStatus(payment.pollUrl);
-        if (status.paid) {
-          await db.intermediatePayment.update({
+      console.log("[CALLBACK] Payment found, pollUrl:", payment.pollUrl);
+
+      // Try to poll Paynow for the latest status
+      if (payment.pollUrl && !payment.paid) {
+        try {
+          const status = await pollPaynowStatus(payment.pollUrl);
+          console.log("[CALLBACK] Paynow status:", status);
+          if (status.paid) {
+            await db.intermediatePayment.update({
             where: { id: reference },
             data: { paid: true },
           });
@@ -362,6 +370,8 @@ export const billingWebhook = new Hono()
       ? `easypos://billing/confirm?reference=${reference}&status=success`
       : `easypos://billing/confirm?reference=${reference}&status=pending`;
 
+    console.log("[CALLBACK] Redirecting to deep link:", deepLink);
+
     return c.html(`
       <!DOCTYPE html>
       <html>
@@ -380,9 +390,13 @@ export const billingWebhook = new Hono()
             document.body.innerHTML = '<h2>If the app did not open, you can close this window.</h2><p>Status: ${payment.paid ? "Payment confirmed" : "Payment pending"}</p>';
           }, 2000);
         </script>
-      </body>
+      </html>
       </html>
     `);
+    } catch (err) {
+      console.error("[CALLBACK] Error:", err);
+      return c.html(`<h1>Error</h1><p>${err instanceof Error ? err.message : "Unknown error"}</p>`, 500);
+    }
   })
 
   // ── Return URL handler (legacy, for path param compatibility) ──
