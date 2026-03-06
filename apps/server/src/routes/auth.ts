@@ -74,6 +74,7 @@ const auth = new Hono<Env>()
           slug: `${slug}-${Date.now().toString(36)}`,
           logoUrl: logoUrl ?? null,
           plan: "none",
+          currency: "USD",
           maxUsers: noneLimits.users,
           maxMonthlyInvoices: noneLimits.monthlyInvoices,
           maxProducts: noneLimits.products,
