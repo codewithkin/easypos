@@ -1,72 +1,40 @@
 import { useState } from "react";
-import { View, Pressable, Linking } from "react-native";
+import { View, Pressable, Linking, ScrollView } from "react-native";
 import { router, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { BackButton } from "@/components/back-button";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
-import { Container } from "@/components/Container";
+import { BackButton } from "@/components/back-button";
 import { useAuthStore } from "@/store/auth";
 import { useApiPost } from "@/hooks/use-api";
-import { PLAN_LIMITS, type Plan } from "@easypos/types";
+import type { Plan } from "@easypos/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-
-const PLAN_FEATURES: Record<Plan, string[]> = {
-    starter: [
-        `Up to ${PLAN_LIMITS.starter.users} users`,
-        `${PLAN_LIMITS.starter.products} products`,
-        `${PLAN_LIMITS.starter.categories} categories`,
-        `${PLAN_LIMITS.starter.branches} branch`,
-        `${PLAN_LIMITS.starter.monthlyInvoices.toLocaleString()} invoices/month`,
-        "Email support",
-    ],
-    growth: [
-        `Up to ${PLAN_LIMITS.growth.users} users`,
-        `${PLAN_LIMITS.growth.products} products`,
-        `${PLAN_LIMITS.growth.categories} categories`,
-        `${PLAN_LIMITS.growth.branches} branches`,
-        `${PLAN_LIMITS.growth.monthlyInvoices.toLocaleString()} invoices/month`,
-        "Priority support",
-    ],
-    enterprise: [
-        `Up to ${PLAN_LIMITS.enterprise.users} users`,
-        `${PLAN_LIMITS.enterprise.products.toLocaleString()} products`,
-        `${PLAN_LIMITS.enterprise.categories} categories`,
-        `${PLAN_LIMITS.enterprise.branches} branches`,
-        `${PLAN_LIMITS.enterprise.monthlyInvoices.toLocaleString()} invoices/month`,
-        "Dedicated support",
-    ],
-};
-
-const PLANS: { key: Plan; name: string; popular?: boolean }[] = [
-    { key: "starter", name: "Starter" },
-    { key: "growth", name: "Growth", popular: true },
-    { key: "enterprise", name: "Enterprise" },
-];
+import { BRAND } from "@/lib/theme";
+import plans from "@/lib/plans";
 
 export default function PlansScreen() {
+    const insets = useSafeAreaInsets();
     const user = useAuthStore((s) => s.user);
-    const currentPlan = user?.org.plan ?? "starter";
-    const [selectedPlan, setSelectedPlan] = useState<Plan>(currentPlan);
-    const [isLoading, setIsLoading] = useState(false);
+    const currentPlan = user?.org.plan ?? "none";
+    const isFirstTime = currentPlan === "none";
+    const [loadingPlan, setLoadingPlan] = useState<Plan | null>(null);
 
     const subscribeMutation = useApiPost<{ paymentId: string; redirectUrl: string }>({
         path: "/billing/subscribe",
     });
 
-    async function handleSubscribe() {
-        if (selectedPlan === currentPlan) {
+    async function handleSubscribe(plan: Plan) {
+        if (plan === currentPlan) {
             toast.info("You are already on this plan.");
             return;
         }
 
-        setIsLoading(true);
+        setLoadingPlan(plan);
         try {
-            const result = await subscribeMutation.mutateAsync({
-                plan: selectedPlan,
-            });
+            const result = await subscribeMutation.mutateAsync({ plan });
 
             if (result.redirectUrl) {
                 // Open Paynow payment page in browser
@@ -76,7 +44,7 @@ export default function PlansScreen() {
         } catch (err: any) {
             toast.error(err?.message ?? "Failed to initiate payment");
         } finally {
-            setIsLoading(false);
+            setLoadingPlan(null);
         }
     }
 
@@ -84,97 +52,159 @@ export default function PlansScreen() {
         <>
             <Stack.Screen
                 options={{
-                    headerShown: true,
-                    title: "Choose a Plan",
-                    headerLeft: () => (
-                        <BackButton />
-                    ),
+                    headerShown: false,
                 }}
             />
-            <Container>
-                <View className="px-4 pt-4 pb-2">
-                    <Text className="text-foreground text-lg font-bold text-center">
-                        Select the right plan for your business
-                    </Text>
-                    <Text className="text-muted-foreground text-sm text-center mt-1">
-                        All plans include overage protection at $0.02/unit
+            <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+                {/* Header */}
+                <View className="flex-row items-center px-4 h-14 border-b border-border bg-card">
+                    {!isFirstTime && <BackButton />}
+                    <Text className="text-foreground font-semibold text-lg flex-1">
+                        {isFirstTime ? "Choose Your Plan" : "Manage Plan"}
                     </Text>
                 </View>
 
-                {PLANS.map(({ key, name, popular }) => {
-                    const limits = PLAN_LIMITS[key];
-                    const isSelected = selectedPlan === key;
-                    const isCurrent = currentPlan === key;
-
-                    return (
-                        <Pressable
-                            key={key}
-                            onPress={() => setSelectedPlan(key)}
-                            className={cn(
-                                "mx-4 mt-3 p-4 rounded-xl border-2",
-                                isSelected
-                                    ? "border-primary bg-primary/5"
-                                    : "border-border bg-card",
-                            )}
-                        >
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center gap-2">
-                                    <Text className="text-foreground font-bold text-lg">{name}</Text>
-                                    {popular && (
-                                        <View className="bg-primary px-2 py-0.5 rounded-full">
-                                            <Text className="text-primary-foreground text-xs font-semibold">
-                                                Popular
-                                            </Text>
-                                        </View>
-                                    )}
-                                    {isCurrent && (
-                                        <View className="bg-secondary px-2 py-0.5 rounded-full">
-                                            <Text className="text-secondary-foreground text-xs font-medium">
-                                                Current
-                                            </Text>
-                                        </View>
-                                    )}
-                                </View>
-                                <View className="items-end">
-                                    <Text className="text-foreground font-bold text-xl">
-                                        ${limits.price}
-                                    </Text>
-                                    <Text className="text-muted-foreground text-xs">/month</Text>
-                                </View>
-                            </View>
-
-                            <View className="mt-3 gap-1.5">
-                                {PLAN_FEATURES[key].map((feature, i) => (
-                                    <View key={i} className="flex-row items-center gap-2">
-                                        <Ionicons
-                                            name="checkmark-circle"
-                                            size={16}
-                                            color={isSelected ? "hsl(142 71% 45%)" : "hsl(0 0% 55%)"}
-                                        />
-                                        <Text className="text-foreground text-sm">{feature}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        </Pressable>
-                    );
-                })}
-
-                <View className="px-4 mt-6 mb-8">
-                    <Button
-                        size="lg"
-                        onPress={handleSubscribe}
-                        disabled={isLoading || selectedPlan === currentPlan}
-                    >
-                        <Text className="text-primary-foreground font-semibold">
-                            {isLoading
-                                ? "Processing..."
-                                : selectedPlan === currentPlan
-                                    ? "Current Plan"
-                                    : `Upgrade to ${selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)}`}
+                <ScrollView
+                    className="flex-1"
+                    contentContainerClassName="px-4 pt-5 pb-10"
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Hero text */}
+                    <View className="items-center mb-5">
+                        <View className="w-14 h-14 rounded-2xl bg-primary/10 items-center justify-center mb-3">
+                            <Ionicons name="diamond" size={28} color={BRAND.brand} />
+                        </View>
+                        <Text className="text-foreground text-xl font-bold text-center">
+                            {isFirstTime
+                                ? "Welcome! Let's get you started"
+                                : "Select the right plan for your business"}
                         </Text>
-                    </Button>
-                </View>
-            </Container>
+                        <Text className="text-muted-foreground text-sm text-center mt-1.5 leading-5 px-4">
+                            {isFirstTime
+                                ? "Pick a plan to unlock EasyPOS and start selling today."
+                                : "All plans include overage protection at $0.02/unit"}
+                        </Text>
+                    </View>
+
+                    {/* Plan cards */}
+                    {plans.map((plan) => {
+                        const isCurrent = currentPlan === plan.key;
+                        const isLoading = loadingPlan === plan.key;
+                        const isDisabled = loadingPlan !== null;
+
+                        return (
+                            <View
+                                key={plan.key}
+                                className={cn(
+                                    "mb-4 rounded-2xl border-2 bg-card overflow-hidden",
+                                    plan.popular
+                                        ? "border-primary"
+                                        : "border-border",
+                                )}
+                            >
+                                {/* Popular badge */}
+                                {plan.popular && (
+                                    <View className="bg-primary py-1.5">
+                                        <Text className="text-primary-foreground text-xs font-bold text-center tracking-wide uppercase">
+                                            Most Popular
+                                        </Text>
+                                    </View>
+                                )}
+
+                                <View className="p-5">
+                                    {/* Plan header */}
+                                    <View className="flex-row items-center justify-between mb-1">
+                                        <View className="flex-row items-center gap-2">
+                                            <Text className="text-foreground font-bold text-xl">
+                                                {plan.name}
+                                            </Text>
+                                            {isCurrent && (
+                                                <View className="bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
+                                                    <Text className="text-primary text-xs font-semibold">
+                                                        Current
+                                                    </Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                        <View className="items-end">
+                                            <View className="flex-row items-baseline">
+                                                <Text className="text-foreground font-extrabold text-2xl">
+                                                    ${plan.price}
+                                                </Text>
+                                                <Text className="text-muted-foreground text-sm ml-0.5">
+                                                    /mo
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </View>
+
+                                    <Text className="text-muted-foreground text-sm mb-4">
+                                        {plan.description}
+                                    </Text>
+
+                                    {/* Features */}
+                                    <View className="gap-2.5 mb-5">
+                                        {plan.features.map((feature, i) => (
+                                            <View key={i} className="flex-row items-center gap-2.5">
+                                                <View className="w-5 h-5 rounded-full bg-primary/10 items-center justify-center">
+                                                    <Ionicons
+                                                        name="checkmark"
+                                                        size={12}
+                                                        color={BRAND.brand}
+                                                    />
+                                                </View>
+                                                <Text className="text-foreground text-sm flex-1">
+                                                    {feature}
+                                                </Text>
+                                            </View>
+                                        ))}
+                                    </View>
+
+                                    {/* CTA button */}
+                                    <Pressable
+                                        onPress={() => handleSubscribe(plan.key)}
+                                        disabled={isCurrent || isDisabled}
+                                        className={cn(
+                                            "h-12 rounded-xl items-center justify-center",
+                                            isCurrent
+                                                ? "bg-secondary"
+                                                : plan.popular
+                                                    ? "bg-primary"
+                                                    : "bg-foreground",
+                                            (isCurrent || isDisabled) && "opacity-60",
+                                        )}
+                                    >
+                                        <Text
+                                            className={cn(
+                                                "font-bold text-sm",
+                                                isCurrent
+                                                    ? "text-muted-foreground"
+                                                    : plan.popular
+                                                        ? "text-primary-foreground"
+                                                        : "text-background",
+                                            )}
+                                        >
+                                            {isLoading
+                                                ? "Processing..."
+                                                : isCurrent
+                                                    ? "Current Plan"
+                                                    : plan.cta}
+                                        </Text>
+                                    </Pressable>
+                                </View>
+                            </View>
+                        );
+                    })}
+
+                    {/* Footer note */}
+                    <View className="items-center mt-2 px-6">
+                        <Text className="text-muted-foreground text-xs text-center leading-4">
+                            Payments are processed securely via Paynow.{"\n"}
+                            You can change your plan at any time.
+                        </Text>
+                    </View>
+                </ScrollView>
+            </View>
         </>
     );
 }
