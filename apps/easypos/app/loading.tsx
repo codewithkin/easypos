@@ -22,6 +22,7 @@ export default function LoadingScreen() {
     const initialize = useAuthStore((s) => s.initialize);
     const isInitialized = useAuthStore((s) => s.isInitialized);
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const user = useAuthStore((s) => s.user);
 
     // Logo pulse
     const scale = useSharedValue(1);
@@ -69,9 +70,16 @@ export default function LoadingScreen() {
 
     useEffect(() => {
         if (isInitialized) {
-            router.replace(isAuthenticated ? ("/(app)" as any) : ("/(auth)/login" as any));
+            if (!isAuthenticated) {
+                router.replace("/(auth)/login" as any);
+            } else if (user?.org.plan === "none") {
+                // User hasn't selected a plan yet — send them to choose one
+                router.replace("/(app)/billing/plans" as any);
+            } else {
+                router.replace("/(app)" as any);
+            }
         }
-    }, [isInitialized, isAuthenticated]);
+    }, [isInitialized, isAuthenticated, user]);
 
     const logoStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scale.value }],

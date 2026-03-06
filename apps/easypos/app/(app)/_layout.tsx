@@ -3,9 +3,19 @@ import { useAuthStore } from "@/store/auth";
 
 export default function AppLayout() {
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const user = useAuthStore((s) => s.user);
 
     if (!isAuthenticated) {
         return <Redirect href="/(auth)/login" />;
+    }
+
+    // If user hasn't selected a plan yet, lock them to the plans page
+    if (user?.org.plan === "none") {
+        return (
+            <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
+                <Stack.Screen name="billing/plans" />
+            </Stack>
+        );
     }
 
     return (
