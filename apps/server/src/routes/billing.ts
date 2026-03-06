@@ -51,24 +51,46 @@ const billing = new Hono<Env>()
     zBody(createIntermediatePaymentRequestSchema),
     async (c) => {
       try {
+        console.log("[SUBSCRIBE] === REQUEST START ===");
         const userId = c.get("userId");
         const orgId = c.get("orgId");
-        const { plan } = c.req.valid("json");
+        console.log("[SUBSCRIBE] userId:", userId);
+        console.log("[SUBSCRIBE] orgId:", orgId);
 
-        if (!PLAN_LIMITS[plan]) {
-          return c.json({ error: `Invalid plan: ${plan}. Must be one of: ${Object.keys(PLAN_LIMITS).join(", ")}` }, 400);
+        const rawBody = await c.req.json();
+        console.log("[SUBSCRIBE] Raw request body:", JSON.stringify(rawBody));
+
+        const { plan } = c.req.valid("json");
+        console.log("[SUBSCRIBE] Parsed plan from request:", plan);
+        console.log("[SUBSCRIBE] Plan type:", typeof plan);
+        console.log("[SUBSCRIBE] Plan value matches starter?", plan === "starter");
+        console.log("[SUBSCRIBE] Valid plan values:", Object.keys(PLAN_LIMITS));
+
+        if (!PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS]) {
+          console.log("[SUBSCRIBE] ERROR: Invalid plan value");
+          return c.json(
+            {
+              error: `Invalid plan: "${plan}". Must be one of: ${Object.keys(PLAN_LIMITS).join(", ")}`,
+            },
+            400,
+          );
         }
 
-        const planLimits = PLAN_LIMITS[plan];
+        const planLimits = PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS];
         const amount = planLimits.price;
+        console.log("[SUBSCRIBE] Plan limits retrieved:", planLimits);
+        console.log("[SUBSCRIBE] Amount:", amount);
 
         // Fetch user email for Paynow
+        console.log("[SUBSCRIBE] Fetching user with id:", userId);
         const user = await db.user.findUniqueOrThrow({
           where: { id: userId },
           select: { email: true },
         });
+        console.log("[SUBSCRIBE] User email:", user.email);
 
         // Create the intermediate payment record
+        console.log("[SUBSCRIBE] Creating intermediate payment");
         const intermediatePayment = await db.intermediatePayment.create({
           data: {
             planName: plan,
@@ -78,16 +100,20 @@ const billing = new Hono<Env>()
             orgId,
           },
         });
+        console.log("[SUBSCRIBE] Intermediate payment created:", intermediatePayment.id);
 
         // Initiate Paynow payment
+        console.log("[SUBSCRIBE] Initiating Paynow payment");
         const result = await initiatePaynowPayment({
           reference: intermediatePayment.id,
           email: user.email,
           amount,
           description: `EasyPOS ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan - $${amount}/mo`,
         });
+        console.log("[SUBSCRIBE] Paynow initiate result:", result);
 
         if (!result.success) {
+          console.log("[SUBSCRIBE] Paynow failed, updating payment record");
           await db.intermediatePayment.update({
             where: { id: intermediatePayment.id },
             data: { failureReason: result.error },
@@ -96,16 +122,23 @@ const billing = new Hono<Env>()
         }
 
         // Save the poll URL
+        console.log("[SUBSCRIBE] Saving poll URL:", result.pollUrl);
         await db.intermediatePayment.update({
           where: { id: intermediatePayment.id },
           data: { pollUrl: result.pollUrl },
         });
 
+        console.log("[SUBSCRIBE] === SUCCESS ===");
         return c.json({
           paymentId: intermediatePayment.id,
           redirectUrl: result.redirectUrl,
         });
       } catch (err: any) {
+        console.error("[SUBSCRIBE] === ERROR ===");
+        console.error("[SUBSCRIBE] Error type:", err.constructor.name);
+        console.error("[SUBSCRIBE] Error message:", err?.message);
+        console.error("[SUBSCRIBE] Error stack:", err?.stack);
+        console.error("[SUBSCRIBE] Full error:", err);
         return c.json({ error: err?.message || "Subscription failed" }, 500);
       }
     },
