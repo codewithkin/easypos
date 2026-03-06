@@ -1,8 +1,10 @@
 /**
- * Deep Link Handler: easypos://billing/confirm?reference=<paymentId>
+ * Deep Link Handler: easypos://billing/confirm?reference=<paymentId>&status=<success|pending>
  *
  * This route handles the user being redirected back from Paynow after payment.
- * It confirms the payment status and navigates to the appropriate screen.
+ * The server sends HTML that opens this deep link, then we:
+ * 1. Confirm payment status via POST /billing/confirm/:id
+ * 2. Redirect to dashboard on success or show error
  */
 
 import { useEffect, useState } from "react";
@@ -18,7 +20,7 @@ import { BRAND } from "@/lib/theme";
 
 export default function BillingConfirmScreen() {
     const insets = useSafeAreaInsets();
-    const { reference } = useLocalSearchParams<{ reference?: string }>();
+    const { reference, status: statusParam } = useLocalSearchParams<{ reference?: string; status?: string }>();
     const [isConfirming, setIsConfirming] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +38,17 @@ export default function BillingConfirmScreen() {
             return;
         }
 
-        // Attempt to confirm payment
+        // If server already confirmed status is success, redirect immediately
+        if (statusParam === "success") {
+            setIsConfirming(false);
+            toast.success("Payment successful", "Your plan has been activated");
+            setTimeout(() => {
+                router.replace("/(app)");
+            }, 1000);
+            return;
+        }
+
+        // Otherwise, poll the server for confirmation
         confirmPayment(undefined, {
             onSuccess: (data) => {
                 setIsConfirming(false);
@@ -52,7 +64,7 @@ export default function BillingConfirmScreen() {
                 toast.error("Confirmation failed", err.message);
             },
         });
-    }, [reference]);
+    }, [reference, statusParam]);
 
     if (isConfirming) {
         return (

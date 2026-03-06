@@ -41,10 +41,8 @@ export async function initiatePaynowPayment(options: {
     reference,
     amount: amount.toFixed(2),
     additionalinfo: description,
-    // returnurl: deep link or HTTP URL with reference as query param
-    returnurl: env.PAYNOW_RETURN_URL.includes("://")
-      ? `${env.PAYNOW_RETURN_URL}?reference=${reference}`
-      : env.PAYNOW_RETURN_URL,
+    // returnurl: HTTP endpoint on server that will redirect to deep link
+    returnurl: `${env.PAYNOW_RETURN_URL}?reference=${reference}`,
     resulturl: env.PAYNOW_RESULT_URL,
     authemail: email,
     status: "Message",

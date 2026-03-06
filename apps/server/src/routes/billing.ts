@@ -304,27 +304,31 @@ export const billingWebhook = new Hono()
     return c.json({ message: "OK" });
   })
 
-  // ── Return URL handler (Paynow redirects user's browser here) ──
-  // Then we redirect to the app's deep link
-  .get("/billing/confirm/:id", async (c) => {
-    const paymentId = c.req.param("id");
+  // ── Callback handler (Paynow redirects user's browser here) ────
+  // Query param: ?reference=<paymentId>
+  // Then we generate HTML that opens the deep link
+  .get("/billing/callback", async (c) => {
+    const reference = c.req.query("reference");
+
+    if (!reference) {
+      return c.html("<h1>Error: Missing payment reference</h1>", 400);
+    }
 
     const payment = await db.intermediatePayment.findUnique({
-      where: { id: paymentId },
+      where: { id: reference },
     });
 
     if (!payment) {
-      // Redirect to failure screen
-      return c.redirect(`easypos://payments/failure?reason=${encodeURIComponent("Payment not found")}`);
+      return c.html("<h1>Error: Payment not found</h1>", 404);
     }
 
-    // Try to poll and confirm
+    // Try to poll Paynow for the latest status
     if (payment.pollUrl && !payment.paid) {
       try {
         const status = await pollPaynowStatus(payment.pollUrl);
         if (status.paid) {
           await db.intermediatePayment.update({
-            where: { id: paymentId },
+            where: { id: reference },
             data: { paid: true },
           });
 
@@ -347,16 +351,39 @@ export const billingWebhook = new Hono()
             },
           });
         }
-      } catch {
-        // Ignore polling errors — the app will retry via the confirm endpoint
+      } catch (err) {
+        console.error("[BILLING] Error polling Paynow:", err);
+        // Continue anyway — the app will retry via the confirm endpoint
       }
     }
 
-    if (payment.paid) {
-      return c.redirect(`easypos://payments/success?intermediatePayment=${paymentId}`);
-    }
+    // Generate HTML that opens the deep link
+    const deepLink = payment.paid
+      ? `easypos://billing/confirm?reference=${reference}&status=success`
+      : `easypos://billing/confirm?reference=${reference}&status=pending`;
 
-    // Payment not yet confirmed — still redirect to success screen
-    // which will poll the confirm endpoint
-    return c.redirect(`easypos://payments/success?intermediatePayment=${paymentId}`);
-  });
+    return c.html(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Redirecting...</title>
+      </head>
+      <body>
+        <h1>Processing payment...</h1>
+        <p>Please wait while we confirm your payment and redirect you to the app.</p>
+        <script>
+          // Try to open the deep link
+          window.location = '${deepLink}';
+          
+          // Fallback: show a message after 2 seconds
+          setTimeout(() => {
+            document.body.innerHTML = '<h2>If the app did not open, you can close this window.</h2><p>Status: ${payment.paid ? "Payment confirmed" : "Payment pending"}</p>';
+          }, 2000);
+        </script>
+      </body>
+      </html>
+    `);
+  })
+
+  // ── Return URL handler (legacy, for path param compatibility) ──
+  // Path param version: /billing/confirm/:id
