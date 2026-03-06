@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/text";
+import { NoPlanGuard } from "@/components/no-plan-guard";
 import { Separator } from "@/components/ui/separator";
 import { Container } from "@/components/Container";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -85,6 +86,7 @@ export default function StoreScreen() {
     });
 
     return (
+        <NoPlanGuard>
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             {/* ── Header ── */}
             <View className="flex-row items-center gap-3 px-5 h-14">
@@ -234,5 +236,6 @@ export default function StoreScreen() {
                 </View>
             </Container>
         </View>
+        </NoPlanGuard>
     );
 }

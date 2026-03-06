@@ -8,6 +8,7 @@ import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from "@gorhom
 import * as Haptics from "expo-haptics";
 
 import { Text } from "@/components/ui/text";
+import { NoPlanGuard } from "@/components/no-plan-guard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -257,6 +258,7 @@ export default function SalesScreen() {
     }
 
     return (
+        <NoPlanGuard>
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             {/*  Header  */}
             <View className="px-5 pt-2 pb-3">
@@ -589,5 +591,6 @@ export default function SalesScreen() {
                 )}
             </BottomSheet>
         </View>
+        </NoPlanGuard>
     );
 }

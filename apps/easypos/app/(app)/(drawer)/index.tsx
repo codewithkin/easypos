@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/text";
+import { NoPlanGuard } from "@/components/no-plan-guard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -90,6 +91,7 @@ export default function DashboardScreen() {
     ];
 
     return (
+        <NoPlanGuard>
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             {/* ── Header ── */}
             <View className="flex-row items-center justify-between px-5 h-14">
@@ -293,5 +295,6 @@ export default function DashboardScreen() {
                 </View>
             </ScrollView>
         </View>
+        </NoPlanGuard>
     );
 }

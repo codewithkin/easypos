@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/text";
+import { NoPlanGuard } from "@/components/no-plan-guard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -110,6 +111,7 @@ export default function CustomersScreen() {
     }
 
     return (
+        <NoPlanGuard>
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             {/* ── Header ── */}
             <View className="px-5 pt-2 pb-3">
@@ -198,5 +200,6 @@ export default function CustomersScreen() {
                 />
             )}
         </View>
+        </NoPlanGuard>
     );
 }

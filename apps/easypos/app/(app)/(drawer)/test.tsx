@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback } from "react";
+import { NoPlanGuard } from "@/components/no-plan-guard";
 import { View, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -188,6 +189,7 @@ export default function TestScreen() {
     }
 
     return (
+        <NoPlanGuard>
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             {/* ── Header ─────────────────────────────────────────────── */}
             <View className="flex-row items-center px-4 h-14 border-b border-border bg-card">
@@ -307,5 +309,6 @@ export default function TestScreen() {
                 </View>
             </ScrollView>
         </View>
+        </NoPlanGuard>
     );
 }
