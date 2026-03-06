@@ -55,10 +55,6 @@ export default function SaleDetailScreen() {
         path: `/sales/${id}`,
     });
 
-    const { mutate: recordPrint } = useApiPost<unknown, { printerName?: string }>({
-        path: `/sales/${id}/print`,
-    });
-
     const { mutate: voidSale, isPending: voiding } = useApiPost<
         Sale,
         { reason: string }
