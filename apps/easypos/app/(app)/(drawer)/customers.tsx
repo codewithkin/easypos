@@ -112,94 +112,94 @@ export default function CustomersScreen() {
 
     return (
         <NoPlanGuard>
-        <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-            {/* ── Header ── */}
-            <View className="px-5 pt-2 pb-3">
-                <View className="flex-row items-center justify-between mb-3">
-                    <View className="flex-row items-center gap-3">
-                        {!isTablet && (
-                            <Pressable
-                                onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-                                className="w-10 h-10 rounded-xl bg-secondary items-center justify-center"
-                            >
-                                <Ionicons name="menu" size={22} color={BRAND.darkest} />
+            <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+                {/* ── Header ── */}
+                <View className="px-5 pt-2 pb-3">
+                    <View className="flex-row items-center justify-between mb-3">
+                        <View className="flex-row items-center gap-3">
+                            {!isTablet && (
+                                <Pressable
+                                    onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+                                    className="w-10 h-10 rounded-xl bg-secondary items-center justify-center"
+                                >
+                                    <Ionicons name="menu" size={22} color={BRAND.darkest} />
+                                </Pressable>
+                            )}
+                            <View>
+                                <Text className="text-2xl font-bold text-foreground">Customers</Text>
+                                <Text className="text-muted-foreground text-xs">
+                                    {customersTotal} total
+                                </Text>
+                            </View>
+                        </View>
+                        <Pressable
+                            onPress={() => router.push("/(app)/customers/create")}
+                            className="bg-primary w-10 h-10 rounded-xl items-center justify-center"
+                        >
+                            <Ionicons name="person-add" size={20} color="hsl(0 0% 98%)" />
+                        </Pressable>
+                    </View>
+
+                    {/* Search */}
+                    <View className="flex-row items-center bg-card border border-border rounded-xl px-3 h-11">
+                        <Ionicons name="search" size={18} color={BRAND.dark} />
+                        <TextInput
+                            placeholder="Search by name, phone, or email..."
+                            placeholderTextColor={BRAND.dark}
+                            value={search}
+                            onChangeText={setSearch}
+                            className="flex-1 ml-2 text-foreground text-sm"
+                        />
+                        {search.length > 0 && (
+                            <Pressable onPress={() => setSearch("")}>
+                                <Ionicons name="close-circle" size={18} color={BRAND.dark} />
                             </Pressable>
                         )}
-                        <View>
-                            <Text className="text-2xl font-bold text-foreground">Customers</Text>
-                            <Text className="text-muted-foreground text-xs">
-                                {customersTotal} total
-                            </Text>
-                        </View>
                     </View>
-                    <Pressable
-                        onPress={() => router.push("/(app)/customers/create")}
-                        className="bg-primary w-10 h-10 rounded-xl items-center justify-center"
-                    >
-                        <Ionicons name="person-add" size={20} color="hsl(0 0% 98%)" />
-                    </Pressable>
                 </View>
 
-                {/* Search */}
-                <View className="flex-row items-center bg-card border border-border rounded-xl px-3 h-11">
-                    <Ionicons name="search" size={18} color={BRAND.dark} />
-                    <TextInput
-                        placeholder="Search by name, phone, or email..."
-                        placeholderTextColor={BRAND.dark}
-                        value={search}
-                        onChangeText={setSearch}
-                        className="flex-1 ml-2 text-foreground text-sm"
+                {/* ── Customer List ── */}
+                {isLoading ? (
+                    <View className="px-5 gap-3 mt-2">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                            <Skeleton key={i} className="h-16 rounded-xl" />
+                        ))}
+                    </View>
+                ) : filtered.length === 0 ? (
+                    <View className="flex-1 items-center justify-center">
+                        <Ionicons name="people-outline" size={48} color={BRAND.mid} />
+                        <Text className="text-muted-foreground mt-3 text-base">
+                            {search ? "No matching customers" : "No customers yet"}
+                        </Text>
+                        {!search && (
+                            <Button
+                                onPress={() => router.push("/(app)/customers/create")}
+                                className="mt-4 h-10 px-6"
+                            >
+                                <Text className="text-primary-foreground font-semibold text-sm">Add Customer</Text>
+                            </Button>
+                        )}
+                    </View>
+                ) : (
+                    <FlatList
+                        data={filtered}
+                        keyExtractor={(item) => item.id}
+                        renderItem={renderCustomer}
+                        ItemSeparatorComponent={() => <Separator className="ml-16" />}
+                        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+                        onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage(); }}
+                        onEndReachedThreshold={0.5}
+                        ListFooterComponent={
+                            isFetchingNextPage ? (
+                                <View className="py-4 items-center">
+                                    <Text className="text-muted-foreground text-xs">Loading more...</Text>
+                                </View>
+                            ) : null
+                        }
+                        contentContainerStyle={{ paddingBottom: 40 }}
                     />
-                    {search.length > 0 && (
-                        <Pressable onPress={() => setSearch("")}>
-                            <Ionicons name="close-circle" size={18} color={BRAND.dark} />
-                        </Pressable>
-                    )}
-                </View>
+                )}
             </View>
-
-            {/* ── Customer List ── */}
-            {isLoading ? (
-                <View className="px-5 gap-3 mt-2">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                        <Skeleton key={i} className="h-16 rounded-xl" />
-                    ))}
-                </View>
-            ) : filtered.length === 0 ? (
-                <View className="flex-1 items-center justify-center">
-                    <Ionicons name="people-outline" size={48} color={BRAND.mid} />
-                    <Text className="text-muted-foreground mt-3 text-base">
-                        {search ? "No matching customers" : "No customers yet"}
-                    </Text>
-                    {!search && (
-                        <Button
-                            onPress={() => router.push("/(app)/customers/create")}
-                            className="mt-4 h-10 px-6"
-                        >
-                            <Text className="text-primary-foreground font-semibold text-sm">Add Customer</Text>
-                        </Button>
-                    )}
-                </View>
-            ) : (
-                <FlatList
-                    data={filtered}
-                    keyExtractor={(item) => item.id}
-                    renderItem={renderCustomer}
-                    ItemSeparatorComponent={() => <Separator className="ml-16" />}
-                    refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
-                    onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage(); }}
-                    onEndReachedThreshold={0.5}
-                    ListFooterComponent={
-                        isFetchingNextPage ? (
-                            <View className="py-4 items-center">
-                                <Text className="text-muted-foreground text-xs">Loading more...</Text>
-                            </View>
-                        ) : null
-                    }
-                    contentContainerStyle={{ paddingBottom: 40 }}
-                />
-            )}
-        </View>
         </NoPlanGuard>
     );
 }

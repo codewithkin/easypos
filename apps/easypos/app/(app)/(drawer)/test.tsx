@@ -190,125 +190,125 @@ export default function TestScreen() {
 
     return (
         <NoPlanGuard>
-        <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-            {/* ── Header ─────────────────────────────────────────────── */}
-            <View className="flex-row items-center px-4 h-14 border-b border-border bg-card">
-                <Pressable
-                    onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-                    className="w-9 h-9 items-center justify-center rounded-lg active:bg-secondary mr-2"
-                >
-                    <Ionicons name="menu" size={22} color={BRAND.dark} />
-                </Pressable>
-                <Text className="text-foreground font-semibold text-lg flex-1">System Test</Text>
-                <Pressable
-                    onPress={handleRunAll}
-                    className="px-3 py-1.5 rounded-lg bg-secondary active:opacity-70"
-                >
-                    <Text className="text-foreground text-sm font-medium">Run All</Text>
-                </Pressable>
-            </View>
-
-            <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
-                {/* ── API Connectivity ─────────────────────────────────── */}
-                <SectionHeader title="API Connectivity" />
-                <View className="bg-card rounded-2xl mx-4 overflow-hidden border border-border">
-                    <CheckRow
-                        icon="cloud-outline"
-                        label="Backend Health"
-                        subtitle={`GET ${SERVER_URL}/api/health`}
-                        result={healthResult}
-                        onPress={checkHealth}
-                    />
+            <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+                {/* ── Header ─────────────────────────────────────────────── */}
+                <View className="flex-row items-center px-4 h-14 border-b border-border bg-card">
+                    <Pressable
+                        onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+                        className="w-9 h-9 items-center justify-center rounded-lg active:bg-secondary mr-2"
+                    >
+                        <Ionicons name="menu" size={22} color={BRAND.dark} />
+                    </Pressable>
+                    <Text className="text-foreground font-semibold text-lg flex-1">System Test</Text>
+                    <Pressable
+                        onPress={handleRunAll}
+                        className="px-3 py-1.5 rounded-lg bg-secondary active:opacity-70"
+                    >
+                        <Text className="text-foreground text-sm font-medium">Run All</Text>
+                    </Pressable>
                 </View>
 
-                <View className="mx-4 mt-2 px-4 py-3 rounded-xl bg-secondary/60">
-                    <Text className="text-muted-foreground text-xs leading-relaxed">
-                        Tap a check row to run it individually, or press{" "}
-                        <Text className="text-foreground font-medium">Run All</Text> to run every
-                        connectivity check at once.
-                    </Text>
-                </View>
-
-                <Separator className="mx-4 my-5" />
-
-                {/* ── Printer Test ─────────────────────────────────────── */}
-                <SectionHeader title="Thermal Printer" />
-                <View className="bg-card rounded-2xl mx-4 overflow-hidden border border-border">
-                    <View className="px-5 py-4">
-                        <View className="flex-row items-start gap-3 mb-4">
-                            <View className="w-10 h-10 rounded-xl bg-secondary items-center justify-center mt-0.5">
-                                <Ionicons name="print-outline" size={20} color={BRAND.dark} />
-                            </View>
-                            <View className="flex-1">
-                                <Text className="text-foreground font-medium text-sm">
-                                    Print Test Receipt
-                                </Text>
-                                <Text className="text-muted-foreground text-xs mt-0.5 leading-relaxed">
-                                    Scans for a paired BLE thermal printer and sends a sample receipt.
-                                    Make sure Bluetooth is on and your printer is paired and nearby.
-                                </Text>
-                            </View>
-                        </View>
-
-                        <Button
-                            onPress={handlePrintTest}
-                            disabled={isPrinting}
-                            className="w-full"
-                        >
-                            {isPrinting ? (
-                                <View className="flex-row items-center gap-2">
-                                    <ActivityIndicator size="small" color="#fff" />
-                                    <Text className="text-primary-foreground font-semibold">
-                                        Connecting to printer…
-                                    </Text>
-                                </View>
-                            ) : (
-                                <View className="flex-row items-center gap-2">
-                                    <Ionicons name="print" size={16} color="#fff" />
-                                    <Text className="text-primary-foreground font-semibold">
-                                        Print Test Page
-                                    </Text>
-                                </View>
-                            )}
-                        </Button>
+                <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
+                    {/* ── API Connectivity ─────────────────────────────────── */}
+                    <SectionHeader title="API Connectivity" />
+                    <View className="bg-card rounded-2xl mx-4 overflow-hidden border border-border">
+                        <CheckRow
+                            icon="cloud-outline"
+                            label="Backend Health"
+                            subtitle={`GET ${SERVER_URL}/api/health`}
+                            result={healthResult}
+                            onPress={checkHealth}
+                        />
                     </View>
-                </View>
 
-                <View className="mx-4 mt-2 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
-                    <View className="flex-row items-start gap-2">
-                        <Ionicons name="warning-outline" size={14} color="#d97706" style={{ marginTop: 1 }} />
-                        <Text className="text-amber-700 text-xs flex-1 leading-relaxed">
-                            The test receipt is clearly marked as a test and is not saved to the
-                            database. It uses the exact same print path as real sale receipts.
+                    <View className="mx-4 mt-2 px-4 py-3 rounded-xl bg-secondary/60">
+                        <Text className="text-muted-foreground text-xs leading-relaxed">
+                            Tap a check row to run it individually, or press{" "}
+                            <Text className="text-foreground font-medium">Run All</Text> to run every
+                            connectivity check at once.
                         </Text>
                     </View>
-                </View>
 
-                <Separator className="mx-4 my-5" />
+                    <Separator className="mx-4 my-5" />
 
-                {/* ── Environment Info ─────────────────────────────────── */}
-                <SectionHeader title="Environment" />
-                <View className="bg-card rounded-2xl mx-4 overflow-hidden border border-border">
-                    {[
-                        { label: "Server URL", value: SERVER_URL },
-                        { label: "Org", value: user?.org?.name ?? "—" },
-                        { label: "User", value: user?.name ?? "—" },
-                        { label: "Role", value: user?.role ?? "—" },
-                        { label: "Plan", value: user?.org?.plan ?? "—" },
-                    ].map((row, i, arr) => (
-                        <View key={row.label}>
-                            <View className="flex-row items-center px-5 py-3.5">
-                                <Text className="text-muted-foreground text-sm flex-1">{row.label}</Text>
-                                <Text className="text-foreground text-sm font-mono" numberOfLines={1} style={{ maxWidth: "60%" }}>
-                                    {row.value}
-                                </Text>
+                    {/* ── Printer Test ─────────────────────────────────────── */}
+                    <SectionHeader title="Thermal Printer" />
+                    <View className="bg-card rounded-2xl mx-4 overflow-hidden border border-border">
+                        <View className="px-5 py-4">
+                            <View className="flex-row items-start gap-3 mb-4">
+                                <View className="w-10 h-10 rounded-xl bg-secondary items-center justify-center mt-0.5">
+                                    <Ionicons name="print-outline" size={20} color={BRAND.dark} />
+                                </View>
+                                <View className="flex-1">
+                                    <Text className="text-foreground font-medium text-sm">
+                                        Print Test Receipt
+                                    </Text>
+                                    <Text className="text-muted-foreground text-xs mt-0.5 leading-relaxed">
+                                        Scans for a paired BLE thermal printer and sends a sample receipt.
+                                        Make sure Bluetooth is on and your printer is paired and nearby.
+                                    </Text>
+                                </View>
                             </View>
-                            {i < arr.length - 1 && <Separator />}
+
+                            <Button
+                                onPress={handlePrintTest}
+                                disabled={isPrinting}
+                                className="w-full"
+                            >
+                                {isPrinting ? (
+                                    <View className="flex-row items-center gap-2">
+                                        <ActivityIndicator size="small" color="#fff" />
+                                        <Text className="text-primary-foreground font-semibold">
+                                            Connecting to printer…
+                                        </Text>
+                                    </View>
+                                ) : (
+                                    <View className="flex-row items-center gap-2">
+                                        <Ionicons name="print" size={16} color="#fff" />
+                                        <Text className="text-primary-foreground font-semibold">
+                                            Print Test Page
+                                        </Text>
+                                    </View>
+                                )}
+                            </Button>
                         </View>
-                    ))}
-                </View>
-            </ScrollView>
-        </View>
+                    </View>
+
+                    <View className="mx-4 mt-2 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
+                        <View className="flex-row items-start gap-2">
+                            <Ionicons name="warning-outline" size={14} color="#d97706" style={{ marginTop: 1 }} />
+                            <Text className="text-amber-700 text-xs flex-1 leading-relaxed">
+                                The test receipt is clearly marked as a test and is not saved to the
+                                database. It uses the exact same print path as real sale receipts.
+                            </Text>
+                        </View>
+                    </View>
+
+                    <Separator className="mx-4 my-5" />
+
+                    {/* ── Environment Info ─────────────────────────────────── */}
+                    <SectionHeader title="Environment" />
+                    <View className="bg-card rounded-2xl mx-4 overflow-hidden border border-border">
+                        {[
+                            { label: "Server URL", value: SERVER_URL },
+                            { label: "Org", value: user?.org?.name ?? "—" },
+                            { label: "User", value: user?.name ?? "—" },
+                            { label: "Role", value: user?.role ?? "—" },
+                            { label: "Plan", value: user?.org?.plan ?? "—" },
+                        ].map((row, i, arr) => (
+                            <View key={row.label}>
+                                <View className="flex-row items-center px-5 py-3.5">
+                                    <Text className="text-muted-foreground text-sm flex-1">{row.label}</Text>
+                                    <Text className="text-foreground text-sm font-mono" numberOfLines={1} style={{ maxWidth: "60%" }}>
+                                        {row.value}
+                                    </Text>
+                                </View>
+                                {i < arr.length - 1 && <Separator />}
+                            </View>
+                        ))}
+                    </View>
+                </ScrollView>
+            </View>
         </NoPlanGuard>
     );
 }
