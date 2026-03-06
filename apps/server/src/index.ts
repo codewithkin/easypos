@@ -31,6 +31,9 @@ const app = new Hono()
   )
   .onError(handleError)
   .get("/health", (c) => c.json({ status: "ok", timestamp: new Date().toISOString() }))
+  // Webhook and callback handlers (no auth required - Paynow calls these directly)
+  // These MUST be registered before the main /billing route to take priority
+  .route("/", billingWebhook)
   .route("/auth", auth)
   .route("/branches", branches)
   .route("/users", users)
@@ -44,9 +47,7 @@ const app = new Hono()
   .route("/reports", reports)
   .route("/billing", billing)
   .route("/uploads", uploads)
-  .route("/org", org)
-  // Webhook handler (no auth required - Paynow calls this directly)
-  .route("/", billingWebhook);
+  .route("/org", org);
 
 export type AppType = typeof app;
 export default app;
