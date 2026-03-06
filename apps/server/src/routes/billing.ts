@@ -47,7 +47,7 @@ const billing = new Hono<Env>()
   // ── Initiate plan purchase / upgrade ──────────────────────────
   .post(
     "/subscribe",
-    requireRole("ADMIN"),
+    requireRole("ADMIN", "MANAGER"),
     zBody(createIntermediatePaymentRequestSchema),
     async (c) => {
       const userId = c.get("userId");

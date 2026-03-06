@@ -27,15 +27,29 @@ export default function PaymentSuccessScreen() {
             .mutateAsync({})
             .then((result) => {
                 setConfirmed(true);
-                setPlanName(result.plan);
+                setPlanName(result.plan ?? "");
                 // Refresh auth state to pick up new plan info
                 initialize();
             })
             .catch((err: any) => {
-                if (err?.message?.includes("already confirmed")) {
-                    setConfirmed(true);
+                // 402 = payment not yet completed — retry after a short delay
+                const msg = err?.message ?? "";
+                if (msg.includes("not yet completed")) {
+                    // Auto-retry after 3 seconds
+                    setTimeout(() => {
+                        confirmMutation
+                            .mutateAsync({})
+                            .then((r) => {
+                                setConfirmed(true);
+                                setPlanName(r.plan ?? "");
+                                initialize();
+                            })
+                            .catch((e: any) => {
+                                setError(e?.message ?? "Payment not confirmed yet. Please check back later.");
+                            });
+                    }, 3000);
                 } else {
-                    setError(err?.message ?? "Failed to confirm payment");
+                    setError(msg || "Failed to confirm payment");
                 }
             });
     }, [intermediatePayment]);
