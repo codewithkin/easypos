@@ -18,7 +18,7 @@ export const env = createEnv({
     PAYNOW_INTEGRATION_ID: z.string().min(1),
     PAYNOW_INTEGRATION_KEY: z.string().min(1),
     PAYNOW_RESULT_URL: z.string().url(),
-    PAYNOW_RETURN_URL: z.string().url(),
+    PAYNOW_RETURN_URL: z.string().min(1), // Can be deep link (easypos://) or HTTP URL
     // Cloudflare R2 (S3-compatible)
     R2_ACCOUNT_ID: z.string().min(1),
     R2_ACCESS_KEY_ID: z.string().min(1),
