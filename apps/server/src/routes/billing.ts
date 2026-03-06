@@ -134,11 +134,19 @@ const billing = new Hono<Env>()
           redirectUrl: result.redirectUrl,
         });
       } catch (err: any) {
-        console.error("[SUBSCRIBE] === ERROR ===");
-        console.error("[SUBSCRIBE] Error type:", err.constructor.name);
-        console.error("[SUBSCRIBE] Error message:", err?.message);
-        console.error("[SUBSCRIBE] Error stack:", err?.stack);
-        console.error("[SUBSCRIBE] Full error:", err);
+        console.error("[SUBSCRIBE] Error:", err?.message ?? err);
+        // Timeout from AbortSignal.timeout() comes through as a DOMException / TimeoutError
+        const isTimeout =
+          err?.name === "TimeoutError" ||
+          err?.code === 23 ||
+          err?.message?.toLowerCase().includes("timed out") ||
+          err?.message?.toLowerCase().includes("timeout");
+        if (isTimeout) {
+          return c.json(
+            { error: "Payment gateway timed out. Please check your network and try again." },
+            504,
+          );
+        }
         return c.json({ error: err?.message || "Subscription failed" }, 500);
       }
     },

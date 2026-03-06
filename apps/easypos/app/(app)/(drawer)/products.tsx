@@ -73,13 +73,12 @@ export default function ProductsScreen() {
 
     const activeCount = products.filter((p) => p.isActive).length;
 
-    function renderProduct({ item, index }: { item: ProductWithCategory; index: number }) {
-        const isOdd = index % 2 !== 0;
+    function renderProduct({ item }: { item: ProductWithCategory }) {
         return (
             <Pressable
                 onPress={() => router.push(`/(app)/products/${item.id}`)}
-                className="flex-1 m-1.5 rounded-2xl bg-card border border-border overflow-hidden active:opacity-80"
-                style={{ maxWidth: "50%" }}
+                className="m-1.5 rounded-2xl bg-card border border-border overflow-hidden active:opacity-80"
+                style={{ width: Math.floor((width - 36) / 2) }}
             >
                 {/* Image */}
                 <View className="w-full aspect-square bg-secondary items-center justify-center">

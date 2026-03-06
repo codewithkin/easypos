@@ -54,12 +54,13 @@ export async function initiatePaynowPayment(options: {
   const hash = await generateHash(hashString);
   values.hash = hash;
 
-  // POST to Paynow
+  // POST to Paynow (15 s timeout — if it hangs longer the integration key/URL is likely wrong)
   const body = new URLSearchParams(values);
   const res = await fetch("https://www.paynow.co.zw/interface/initiatetransaction", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: body.toString(),
+    signal: AbortSignal.timeout(15_000),
   });
 
   const text = await res.text();

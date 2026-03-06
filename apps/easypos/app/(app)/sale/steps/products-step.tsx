@@ -97,13 +97,13 @@ export function ProductsStep({
                 onPress={() => handleTap(item)}
                 className={cn(
                     "flex-1 m-1.5 rounded-2xl border-2 bg-card overflow-hidden shadow-sm",
-                    inCart ? "border-primary bg-primary/5" : "border-border hover:border-primary/30",
+                    inCart ? "border-primary" : "border-border",
                 )}
                 style={{
-                    shadowColor: inCart ? BRAND.brand : BRAND.dark,
-                    shadowOpacity: inCart ? 0.15 : 0.05,
+                    shadowColor: BRAND.dark,
+                    shadowOpacity: 0.05,
                     shadowRadius: 8,
-                    elevation: inCart ? 4 : 2,
+                    elevation: 2,
                 }}
             >
                 {/* Image container with brand accent */}
@@ -139,11 +139,8 @@ export function ProductsStep({
                     )}
                 </View>
 
-                {/* Info section with brand color accents */}
-                <View className={cn(
-                    "px-3 pt-3 pb-3 gap-1.5",
-                    inCart && "border-t-2 border-primary/20"
-                )}>
+                {/* Info section */}
+                <View className="px-3 pt-3 pb-3 gap-1.5">
                     <Text className="text-foreground text-xs font-semibold leading-tight" numberOfLines={2}>
                         {item.name}
                     </Text>
