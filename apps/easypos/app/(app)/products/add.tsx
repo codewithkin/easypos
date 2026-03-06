@@ -22,6 +22,7 @@ interface Field {
     name: string;
     price: string;
     cost: string;
+    stock: string;
 }
 
 export default function AddProductScreen() {
@@ -30,6 +31,7 @@ export default function AddProductScreen() {
         name: "",
         price: "",
         cost: "",
+        stock: "",
     });
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -114,6 +116,10 @@ export default function AddProductScreen() {
         if (fields.cost.trim()) {
             const cost = parseFloat(fields.cost);
             if (!isNaN(cost) && cost >= 0) body.cost = cost;
+        }
+        if (fields.stock.trim()) {
+            const stock = parseInt(fields.stock, 10);
+            if (!isNaN(stock) && stock >= 0) body.stock = stock;
         }
         if (selectedCategory) body.categoryId = selectedCategory;
         if (selectedTags.length > 0) body.tagIds = selectedTags;
@@ -212,6 +218,25 @@ export default function AddProductScreen() {
                 </View>
                 <Text className="text-muted-foreground text-xs mt-2">
                     Leave cost blank if unknown — that product won&apos;t be included in profit calculations.
+                </Text>
+
+                <Separator className="my-5" />
+
+                {/* Inventory */}
+                <Text className="text-muted-foreground text-xs uppercase tracking-wider mb-3">Inventory</Text>
+                <View className="gap-1.5">
+                    <Label nativeID="stock">Stock Quantity</Label>
+                    <Input
+                        id="stock"
+                        placeholder="Leave blank if not tracked"
+                        value={fields.stock}
+                        onChangeText={set("stock")}
+                        keyboardType="number-pad"
+                        className="h-11"
+                    />
+                </View>
+                <Text className="text-muted-foreground text-xs mt-2">
+                    Leave blank to skip stock tracking for this product.
                 </Text>
 
                 <Separator className="my-5" />

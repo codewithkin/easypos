@@ -161,6 +161,14 @@ export function ProductsStep({
                                 onChange={(next) => setQuantity(item.id, next)}
                                 size="sm"
                             />
+                            {item.stock != null && qty > item.stock && (
+                                <View className="mt-1.5 flex-row items-start gap-1">
+                                    <Ionicons name="warning-outline" size={11} color={BRAND.yellow} style={{ marginTop: 1 }} />
+                                    <Text className="text-amber-600 text-[10px] leading-tight flex-1">
+                                        Your stock says you have {item.stock} of this item in stock, you may need to update it.
+                                    </Text>
+                                </View>
+                            )}
                         </View>
                     )}
                 </View>

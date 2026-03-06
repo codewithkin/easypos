@@ -63,6 +63,7 @@ export default function EditProductScreen() {
     const [sku, setSku] = useState("");
     const [price, setPrice] = useState("");
     const [cost, setCost] = useState("");
+    const [stock, setStock] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [newTagName, setNewTagName] = useState("");
@@ -79,6 +80,7 @@ export default function EditProductScreen() {
             setSku(product.sku);
             setPrice(String(product.price));
             setCost(product.cost != null ? String(product.cost) : "");
+            setStock(product.stock != null ? String(product.stock) : "");
             setSelectedCategory(product.categoryId ?? null);
             setSelectedTags(product.tags?.map((t) => t.tag.id) ?? []);
             setIsActive(product.isActive);
@@ -146,6 +148,8 @@ export default function EditProductScreen() {
             const c = parseFloat(cost);
             if (!isNaN(c) && c >= 0) body.cost = c;
         }
+        const parsedStock = stock.trim() ? parseInt(stock, 10) : null;
+        body.stock = !isNaN(parsedStock as number) && parsedStock !== null ? parsedStock : null;
         body.categoryId = selectedCategory ?? undefined;
         body.tagIds = selectedTags;
         if (imageUrl) body.imageUrl = imageUrl;
@@ -274,6 +278,23 @@ export default function EditProductScreen() {
                                 <Input id="cost" value={cost} onChangeText={setCost} keyboardType="numeric" className="h-11" />
                             </View>
                         </View>
+
+                        <Separator className="my-5" />
+                        <Text className="text-muted-foreground text-xs uppercase tracking-wider mb-3">Inventory</Text>
+                        <View className="gap-1.5">
+                            <Label nativeID="stock">Stock Quantity</Label>
+                            <Input
+                                id="stock"
+                                placeholder="Leave blank if not tracked"
+                                value={stock}
+                                onChangeText={setStock}
+                                keyboardType="number-pad"
+                                className="h-11"
+                            />
+                        </View>
+                        <Text className="text-muted-foreground text-xs mt-2">
+                            Leave blank to skip stock tracking for this product.
+                        </Text>
 
                         {categories.length > 0 && (
                             <>

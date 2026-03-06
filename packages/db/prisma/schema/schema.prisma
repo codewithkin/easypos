@@ -199,7 +199,7 @@ model Product {
   imageUrl   String?
   price      Float
   cost       Float?
-  stock      Int      @default(0)
+  stock      Int?
   isActive   Boolean  @default(true)
   categoryId String?
   orgId      String
