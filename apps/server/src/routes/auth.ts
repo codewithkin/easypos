@@ -67,18 +67,18 @@ const auth = new Hono<Env>()
       const nextBilling = new Date(now);
       nextBilling.setDate(nextBilling.getDate() + 30);
 
-      const starterLimits = PLAN_LIMITS.starter;
+      const noneLimits = PLAN_LIMITS.none;
       const org = await tx.organization.create({
         data: {
           name: orgName,
           slug: `${slug}-${Date.now().toString(36)}`,
           logoUrl: logoUrl ?? null,
-          plan: "starter",
-          maxUsers: starterLimits.users,
-          maxMonthlyInvoices: starterLimits.monthlyInvoices,
-          maxProducts: starterLimits.products,
-          maxCategories: starterLimits.categories,
-          maxBranches: starterLimits.branches,
+          plan: "none",
+          maxUsers: noneLimits.users,
+          maxMonthlyInvoices: noneLimits.monthlyInvoices,
+          maxProducts: noneLimits.products,
+          maxCategories: noneLimits.categories,
+          maxBranches: noneLimits.branches,
           billingCycleStart: now,
           nextBillingDate: nextBilling,
         },

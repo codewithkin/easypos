@@ -11,12 +11,13 @@ export type PaymentMethod = z.infer<typeof paymentMethodSchema>;
 export const saleStatusSchema = z.enum(["COMPLETED", "VOIDED", "REFUNDED"]);
 export type SaleStatus = z.infer<typeof saleStatusSchema>;
 
-export const planSchema = z.enum(["starter", "growth", "enterprise"]);
+export const planSchema = z.enum(["none", "starter", "growth", "enterprise"]);
 export type Plan = z.infer<typeof planSchema>;
 
 // ── Plan Limits & Billing Constants ────────────────────────────────
 
 export const PLAN_LIMITS = {
+  none: { users: 1, monthlyInvoices: 0, products: 0, categories: 0, branches: 0, price: 0 },
   starter: { users: 5, monthlyInvoices: 1000, products: 300, categories: 50, branches: 1, price: 49 },
   growth: { users: 12, monthlyInvoices: 2500, products: 700, categories: 150, branches: 3, price: 99 },
   enterprise: { users: 20, monthlyInvoices: 10000, products: 1850, categories: 500, branches: 10, price: 249 },

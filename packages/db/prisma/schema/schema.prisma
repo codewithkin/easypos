@@ -37,6 +37,7 @@ enum Gender {
 }
 
 enum Plan {
+  none
   starter
   growth
   enterprise
@@ -54,7 +55,7 @@ model Organization {
   receiptFooter String?
 
   // ── Subscription & Billing ─────────────────────────────────────
-  plan                        Plan     @default(starter)
+  plan                        Plan     @default(none)
   maxUsers                    Int      @default(5)
   maxMonthlyInvoices          Int      @default(1000)
   maxProducts                 Int      @default(300)
