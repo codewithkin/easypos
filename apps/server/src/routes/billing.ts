@@ -50,56 +50,64 @@ const billing = new Hono<Env>()
     requireRole("ADMIN", "MANAGER"),
     zBody(createIntermediatePaymentRequestSchema),
     async (c) => {
-      const userId = c.get("userId");
-      const orgId = c.get("orgId");
-      const { plan } = c.req.valid("json");
+      try {
+        const userId = c.get("userId");
+        const orgId = c.get("orgId");
+        const { plan } = c.req.valid("json");
 
-      const planLimits = PLAN_LIMITS[plan];
-      const amount = planLimits.price;
+        if (!PLAN_LIMITS[plan]) {
+          return c.json({ error: `Invalid plan: ${plan}. Must be one of: ${Object.keys(PLAN_LIMITS).join(", ")}` }, 400);
+        }
 
-      // Fetch user email for Paynow
-      const user = await db.user.findUniqueOrThrow({
-        where: { id: userId },
-        select: { email: true },
-      });
+        const planLimits = PLAN_LIMITS[plan];
+        const amount = planLimits.price;
 
-      // Create the intermediate payment record
-      const intermediatePayment = await db.intermediatePayment.create({
-        data: {
-          planName: plan,
+        // Fetch user email for Paynow
+        const user = await db.user.findUniqueOrThrow({
+          where: { id: userId },
+          select: { email: true },
+        });
+
+        // Create the intermediate payment record
+        const intermediatePayment = await db.intermediatePayment.create({
+          data: {
+            planName: plan,
+            amount,
+            currency: "USD",
+            userId,
+            orgId,
+          },
+        });
+
+        // Initiate Paynow payment
+        const result = await initiatePaynowPayment({
+          reference: intermediatePayment.id,
+          email: user.email,
           amount,
-          currency: "USD",
-          userId,
-          orgId,
-        },
-      });
+          description: `EasyPOS ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan - $${amount}/mo`,
+        });
 
-      // Initiate Paynow payment
-      const result = await initiatePaynowPayment({
-        reference: intermediatePayment.id,
-        email: user.email,
-        amount,
-        description: `EasyPOS ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan - $${amount}/mo`,
-      });
+        if (!result.success) {
+          await db.intermediatePayment.update({
+            where: { id: intermediatePayment.id },
+            data: { failureReason: result.error },
+          });
+          return c.json({ error: result.error || "Payment initiation failed" }, 400);
+        }
 
-      if (!result.success) {
+        // Save the poll URL
         await db.intermediatePayment.update({
           where: { id: intermediatePayment.id },
-          data: { failureReason: result.error },
+          data: { pollUrl: result.pollUrl },
         });
-        return c.json({ error: result.error || "Payment initiation failed" }, 400);
+
+        return c.json({
+          paymentId: intermediatePayment.id,
+          redirectUrl: result.redirectUrl,
+        });
+      } catch (err: any) {
+        return c.json({ error: err?.message || "Subscription failed" }, 500);
       }
-
-      // Save the poll URL
-      await db.intermediatePayment.update({
-        where: { id: intermediatePayment.id },
-        data: { pollUrl: result.pollUrl },
-      });
-
-      return c.json({
-        paymentId: intermediatePayment.id,
-        redirectUrl: result.redirectUrl,
-      });
     },
   )
 
