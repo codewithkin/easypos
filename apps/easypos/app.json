@@ -23,7 +23,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#00B25A"
       },
-      "package": "com.easypos.app"
+      "package": "com.easypos.app",
+      "versionCode": 2
     },
     "web": {
       "bundler": "metro",
