@@ -64,7 +64,7 @@ const app = new Hono()
                     properties: {
                       password: {
                         type: "string",
-                        example: "exyro45610y2627291",
+                        example: "your-secret-admin-password",
                         description: "Admin password (case-sensitive)",
                       },
                       storeName: {
