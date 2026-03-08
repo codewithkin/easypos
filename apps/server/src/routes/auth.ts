@@ -15,6 +15,7 @@ import type { Env } from "../lib/context.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { sendPasswordResetEmail } from "../lib/email.js";
 import { PLAN_LIMITS } from "@easypos/types";
+import { createSlug } from "../lib/slug.js";
 
 function userToResponse(user: any, org: any, branch: any) {
   return {
@@ -86,7 +87,7 @@ const auth = new Hono<Env>()
       });
 
       const branch = await tx.branch.create({
-        data: { name: "Main Branch", orgId: org.id },
+        data: { name: "Main Branch", slug: createSlug("Main Branch"), orgId: org.id },
       });
 
       const user = await tx.user.create({
