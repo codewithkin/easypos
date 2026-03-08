@@ -88,6 +88,7 @@ model Organization {
 model Branch {
   id        String   @id @default(cuid())
   name      String
+  slug      String   // lowercase, hyphenated version of name (e.g., "My Store" -> "my-store")
   address   String?
   phone     String?
   isActive  Boolean  @default(true)
@@ -100,6 +101,7 @@ model Branch {
   devices Device[]
   sales   Sale[]
 
+  @@unique([orgId, slug]) // Ensure slug is unique per organization
   @@index([orgId])
 }
 

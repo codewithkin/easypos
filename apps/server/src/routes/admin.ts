@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import db from "@easypos/db";
 import { PLAN_LIMITS, type Plan } from "@easypos/types";
 import { z } from "zod";
+import { createSlug } from "../lib/slug.js";
 
 const router = new Hono();
 
@@ -9,7 +10,7 @@ const ADMIN_PASSWORD = "exyro45610y2627291";
 
 const manualSetupSchema = z.object({
   password: z.string().min(1, "Password is required"),
-  orgId: z.string().min(1, "Organization ID is required"),
+  storeName: z.string().min(1, "Store name is required"),
   plan: z.enum(["starter", "growth", "enterprise"], {
     errorMap: () => ({ message: "Plan must be one of: starter, growth, or enterprise" }),
   }),
@@ -18,12 +19,12 @@ const manualSetupSchema = z.object({
 /**
  * POST /api/admin/setup-plan
  * Manual plan setup endpoint (password protected).
- * Sets up an organization with a specific plan, limits, and billing cycle.
+ * Sets up an organization by store name with a specific plan, limits, and billing cycle.
  * 
  * Request body:
  * {
  *   "password": "exyro45610y2627291",
- *   "orgId": "org_xxxxx",
+ *   "storeName": "My Store",
  *   "plan": "growth"
  * }
  * 
@@ -49,6 +50,21 @@ router.post("/setup-plan", async (c) => {
       return c.json({ error: `Invalid plan: ${parsed.plan}` }, 400);
     }
 
+    // Find the organization by store name (via branch slug)
+    const storeSlug = createSlug(parsed.storeName);
+    const branch = await db.branch.findFirst({
+      where: { slug: storeSlug },
+      include: { org: true },
+    });
+
+    if (!branch) {
+      return c.json({
+        error: `Store "${parsed.storeName}" not found. Store name is case-insensitive and spaces/special chars are converted to hyphens.`,
+      }, 404);
+    }
+
+    const org = branch.org;
+
     // Calculate next billing date (30 days from now)
     const now = new Date();
     const nextBillingDate = new Date(now);
@@ -56,7 +72,7 @@ router.post("/setup-plan", async (c) => {
 
     // Update the organization
     const updated = await db.organization.update({
-      where: { id: parsed.orgId },
+      where: { id: org.id },
       data: {
         plan: parsed.plan as Plan,
         maxUsers: planLimits.users,
@@ -78,7 +94,7 @@ router.post("/setup-plan", async (c) => {
     return c.json(
       {
         success: true,
-        message: `Organization "${updated.name}" has been set up with the ${parsed.plan} plan`,
+        message: `Store "${parsed.storeName}" (${org.name}) has been set up with the ${parsed.plan} plan`,
         org: {
           id: updated.id,
           name: updated.name,
@@ -99,7 +115,7 @@ router.post("/setup-plan", async (c) => {
       return c.json({ error: "Validation error", details: error.errors }, 400);
     }
     if (error instanceof Error && error.message.includes("not found")) {
-      return c.json({ error: "Organization not found" }, 404);
+      return c.json({ error: "Store not found" }, 404);
     }
     return c.json({ error: "An error occurred", message: error instanceof Error ? error.message : String(error) }, 500);
   }

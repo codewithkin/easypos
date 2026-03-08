@@ -6,6 +6,7 @@ import type { Env } from "../lib/context.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { requireRole } from "../middleware/rbac.js";
 import { checkBranchLimit } from "../lib/plan-limits.js";
+import { createSlug } from "../lib/slug.js";
 
 const branches = new Hono<Env>()
   .use(authMiddleware)
@@ -49,8 +50,20 @@ const branches = new Hono<Env>()
       return c.json({ error: branchCheck.reason }, 403);
     }
 
+    // ── Generate slug from name ────────────────────────────────────
+    const slug = createSlug(data.name);
+
+    // ── Check if slug is already taken ────────────────────────────
+    const existingSlug = await db.branch.findFirst({
+      where: { orgId, slug },
+    });
+
+    if (existingSlug) {
+      return c.json({ error: "Store name is already taken" }, 409);
+    }
+
     const branch = await db.branch.create({
-      data: { ...data, orgId },
+      data: { ...data, slug, orgId },
     });
 
     return c.json(branch, 201);

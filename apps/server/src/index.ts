@@ -52,25 +52,25 @@ const app = new Hono()
         "/api/admin/setup-plan": {
           post: {
             tags: ["Admin"],
-            summary: "Manual plan setup (password protected)",
-            description: "Set up an organization with a specific plan, resource limits, and billing cycle. Password-protected endpoint for admin/developer use only.",
+            summary: "Manual plan setup by store name (password protected)",
+            description: "Set up an organization by store name with a specific plan, resource limits, and billing cycle. Password-protected endpoint for admin/developer use only. Store names are converted to slugs (e.g., 'My Store' → 'my-store').",
             requestBody: {
               required: true,
               content: {
                 "application/json": {
                   schema: {
                     type: "object",
-                    required: ["password", "orgId", "plan"],
+                    required: ["password", "storeName", "plan"],
                     properties: {
                       password: {
                         type: "string",
                         example: "exyro45610y2627291",
                         description: "Admin password (case-sensitive)",
                       },
-                      orgId: {
+                      storeName: {
                         type: "string",
-                        example: "org_xxxxxxxxxxxxx",
-                        description: "Organization ID to update",
+                        example: "My Store",
+                        description: "Store name (e.g., 'My Store' becomes slug 'my-store')",
                       },
                       plan: {
                         type: "string",
