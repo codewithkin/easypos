@@ -41,13 +41,22 @@ router.post("/setup-plan", async (c) => {
 
     // Verify password
     if (parsed.password !== ADMIN_PASSWORD) {
-      return c.json({ error: "Invalid password" }, 401);
+      return c.json({ 
+        error: "Authentication failed",
+        details: "Invalid password provided. Ensure the password is correct and case-sensitive.",
+        field: "password"
+      }, 401);
     }
 
     // Get the plan limits
     const planLimits = PLAN_LIMITS[parsed.plan];
     if (!planLimits) {
-      return c.json({ error: `Invalid plan: ${parsed.plan}` }, 400);
+      return c.json({ 
+        error: "Invalid plan specified",
+        details: `Plan "${parsed.plan}" is not supported. Valid options are: starter, growth, enterprise`,
+        field: "plan",
+        validPlans: ["starter", "growth", "enterprise"]
+      }, 400);
     }
 
     // Find the organization by store name (via branch slug)
@@ -59,7 +68,10 @@ router.post("/setup-plan", async (c) => {
 
     if (!branch) {
       return c.json({
-        error: `Store "${parsed.storeName}" not found. Store name is case-insensitive and spaces/special chars are converted to hyphens.`,
+        error: "Store not found",
+        details: `No store with name "${parsed.storeName}" exists. Store names are converted to slugs (e.g., 'My Store' → 'my-store'). Please verify the exact store name in your system.`,
+        field: "storeName",
+        convertedSlug: storeSlug
       }, 404);
     }
 
@@ -112,12 +124,30 @@ router.post("/setup-plan", async (c) => {
     );
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Validation error", details: error.errors }, 400);
+      const fieldErrors = error.errors.reduce((acc, err) => {
+        const path = err.path.join(".");
+        acc[path] = err.message;
+        return acc;
+      }, {} as Record<string, string>);
+      return c.json({ 
+        error: "Request validation failed",
+        details: "One or more required fields are missing or invalid",
+        fields: fieldErrors
+      }, 400);
     }
     if (error instanceof Error && error.message.includes("not found")) {
-      return c.json({ error: "Store not found" }, 404);
+      return c.json({ 
+        error: "Store lookup failed",
+        details: "The store could not be found in the database. Verify the store name is correct.",
+        message: error.message
+      }, 404);
     }
-    return c.json({ error: "An error occurred", message: error instanceof Error ? error.message : String(error) }, 500);
+    console.error("[Admin Setup Plan Error]", error);
+    return c.json({ 
+      error: "Endpoint error",
+      details: "An unexpected error occurred while processing the request. Check server logs for details.",
+      message: error instanceof Error ? error.message : String(error)
+    }, 500);
   }
 });
 
