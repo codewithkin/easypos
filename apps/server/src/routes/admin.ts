@@ -19,14 +19,17 @@ const manualSetupSchema = z.object({
 /**
  * POST /api/admin/setup-plan
  * Manual plan setup endpoint (password protected).
- * Sets up an organization by store name with a specific plan, limits, and billing cycle.
+ * Sets up an organization by organization name (the name used during registration) with a specific plan, limits, and billing cycle.
  * 
  * Request body:
  * {
  *   "password": "exyro45610y2627291",
- *   "storeName": "My Store",
+ *   "storeName": "My Organization",
  *   "plan": "growth"
  * }
+ * 
+ * Note: "storeName" should be the organization name from registration (e.g., "Christus"), not a branch name.
+ * Organization names are converted to slugs (e.g., "Christus" → "christus-<timestamp>") for lookup.
  * 
  * Response:
  * {
@@ -59,23 +62,25 @@ router.post("/setup-plan", async (c) => {
       }, 400);
     }
 
-    // Find the organization by store name (via branch slug)
-    const storeSlug = createSlug(parsed.storeName);
-    const branch = await db.branch.findFirst({
-      where: { slug: storeSlug },
-      include: { org: true },
+    // Find the organization by name (partial match because org slug includes timestamp)
+    // We search by the organization name provided at registration
+    const org = await db.organization.findFirst({
+      where: {
+        name: {
+          equals: parsed.storeName,
+          mode: "insensitive",
+        },
+      },
     });
 
-    if (!branch) {
+    if (!org) {
       return c.json({
-        error: "Store not found",
-        details: `No store with name "${parsed.storeName}" exists. Store names are converted to slugs (e.g., 'My Store' → 'my-store'). Please verify the exact store name in your system.`,
+        error: "Organization not found",
+        details: `No organization with name "${parsed.storeName}" exists. This should be the exact organization name from registration (not a branch name). Organizations names are case-insensitive. Please verify the organization name is correct.`,
         field: "storeName",
-        convertedSlug: storeSlug
+        hint: "The 'storeName' parameter should match the 'orgName' you provided during registration (e.g., 'Christus')."
       }, 404);
     }
-
-    const org = branch.org;
 
     // Calculate next billing date (30 days from now)
     const now = new Date();
