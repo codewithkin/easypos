@@ -15,6 +15,7 @@
     "@easypos/types": "workspace:*",
     "@easypos/uploads": "workspace:*",
     "@easypos/utils": "workspace:*",
+    "@hono/swagger-ui": "^0.6.0",
     "dotenv": "catalog:",
     "hono": "^4.8.2",
     "nodemailer": "^8.0.1",
