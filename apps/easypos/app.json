@@ -24,7 +24,7 @@
         "backgroundColor": "#00B25A"
       },
       "package": "com.easypos.app",
-      "versionCode": 3
+      "versionCode": 4
     },
     "web": {
       "bundler": "metro",
