@@ -55,7 +55,9 @@ model Organization {
   receiptFooter String?
 
   // ── Subscription & Billing ─────────────────────────────────────
-  plan                        Plan     @default(none)
+  plan                        Plan      @default(none)
+  trialPlan                   Plan?
+  trialEndsAt                 DateTime?
   maxUsers                    Int      @default(5)
   maxMonthlyInvoices          Int      @default(1000)
   maxProducts                 Int      @default(300)
