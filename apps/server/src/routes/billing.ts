@@ -11,6 +11,7 @@ import { authMiddleware } from "../middleware/auth.js";
 import { requireRole } from "../middleware/rbac.js";
 import { initiatePaynowPayment, pollPaynowStatus } from "../lib/billing.js";
 import { applyPlanLimits, getOrgUsage } from "../lib/plan-limits.js";
+import { sendSubscriptionInvoiceEmail } from "../lib/email.js";
 
 const billing = new Hono<Env>()
   .use(authMiddleware)
@@ -197,7 +198,7 @@ const billing = new Hono<Env>()
     await applyPlanLimits(orgId, plan);
 
     // Reset billing cycle on plan change
-    await db.organization.update({
+    const org = await db.organization.update({
       where: { id: orgId },
       data: {
         billingCycleStart: now,
@@ -209,6 +210,22 @@ const billing = new Hono<Env>()
         pendingOverageCharges: 0,
       },
     });
+
+    // Send invoice email (fire-and-forget)
+    const user = await db.user.findFirst({ where: { orgId, role: "ADMIN" }, select: { email: true, name: true } });
+    if (user) {
+      sendSubscriptionInvoiceEmail({
+        to: user.email,
+        name: user.name,
+        orgName: org.name,
+        planName: plan.charAt(0).toUpperCase() + plan.slice(1),
+        amount: payment.amount,
+        currency: payment.currency,
+        billingCycleStart: now,
+        nextBillingDate: nextBilling,
+        paymentId: paymentId,
+      }).catch((err) => console.error("[BILLING] Invoice email error:", err));
+    }
 
     return c.json({ message: "Payment confirmed", plan });
   })
@@ -290,7 +307,7 @@ export const billingWebhook = new Hono()
 
       await applyPlanLimits(payment.orgId, plan);
 
-      await db.organization.update({
+      const org = await db.organization.update({
         where: { id: payment.orgId },
         data: {
           billingCycleStart: now,
@@ -302,6 +319,22 @@ export const billingWebhook = new Hono()
           pendingOverageCharges: 0,
         },
       });
+
+      // Send invoice email (fire-and-forget)
+      const adminUser = await db.user.findFirst({ where: { orgId: payment.orgId, role: "ADMIN" }, select: { email: true, name: true } });
+      if (adminUser) {
+        sendSubscriptionInvoiceEmail({
+          to: adminUser.email,
+          name: adminUser.name,
+          orgName: org.name,
+          planName: plan.charAt(0).toUpperCase() + plan.slice(1),
+          amount: payment.amount,
+          currency: payment.currency,
+          billingCycleStart: now,
+          nextBillingDate: nextBilling,
+          paymentId: reference,
+        }).catch((err) => console.error("[WEBHOOK] Invoice email error:", err));
+      }
     } else if (status === "cancelled" || status === "failed") {
       await db.intermediatePayment.update({
         where: { id: reference },
@@ -354,7 +387,7 @@ export const billingWebhook = new Hono()
           nextBilling.setDate(nextBilling.getDate() + 30);
 
           await applyPlanLimits(payment.orgId, plan);
-          await db.organization.update({
+          const org = await db.organization.update({
             where: { id: payment.orgId },
             data: {
               billingCycleStart: now,
@@ -366,6 +399,22 @@ export const billingWebhook = new Hono()
               pendingOverageCharges: 0,
             },
           });
+
+          // Send invoice email (fire-and-forget)
+          const adminUser = await db.user.findFirst({ where: { orgId: payment.orgId, role: "ADMIN" }, select: { email: true, name: true } });
+          if (adminUser) {
+            sendSubscriptionInvoiceEmail({
+              to: adminUser.email,
+              name: adminUser.name,
+              orgName: org.name,
+              planName: plan.charAt(0).toUpperCase() + plan.slice(1),
+              amount: payment.amount,
+              currency: payment.currency,
+              billingCycleStart: now,
+              nextBillingDate: nextBilling,
+              paymentId: reference,
+            }).catch((err) => console.error("[CALLBACK] Invoice email error:", err));
+          }
         }
       } catch (err) {
         console.error("[BILLING] Error polling Paynow:", err);

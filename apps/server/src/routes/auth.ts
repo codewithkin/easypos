@@ -13,7 +13,7 @@ import { hashPassword, verifyPassword } from "../lib/password.js";
 import { zBody } from "../lib/validate.js";
 import type { Env } from "../lib/context.js";
 import { authMiddleware } from "../middleware/auth.js";
-import { sendPasswordResetEmail } from "../lib/email.js";
+import { sendPasswordResetEmail, sendTrialWelcomeEmail } from "../lib/email.js";
 import { PLAN_LIMITS } from "@easypos/types";
 import { createSlug } from "../lib/slug.js";
 
@@ -35,6 +35,8 @@ function userToResponse(user: any, org: any, branch: any) {
       currency: org.currency,
       logoUrl: org.logoUrl ?? null,
       plan: org.plan,
+      trialPlan: org.trialPlan ?? null,
+      trialEndsAt: org.trialEndsAt ?? null,
       maxUsers: org.maxUsers,
       maxMonthlyInvoices: org.maxMonthlyInvoices,
       maxProducts: org.maxProducts,
@@ -53,7 +55,7 @@ const auth = new Hono<Env>()
 
   // ── Register (create org + owner) ──────────────────────────────
   .post("/register", zBody(registerRequestSchema), async (c) => {
-    const { orgName, email, password, name, logoUrl } = c.req.valid("json");
+    const { orgName, email, password, name, logoUrl, trialPlan } = c.req.valid("json");
 
     const existingUser = await db.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -63,24 +65,33 @@ const auth = new Hono<Env>()
     const passwordHash = await hashPassword(password);
     const slug = slugify(orgName);
 
+    // Use the selected trial plan's limits so user gets full access during trial
+    const selectedPlan = trialPlan ?? "starter";
+    const trialLimits = PLAN_LIMITS[selectedPlan];
+
     const result = await db.$transaction(async (tx) => {
       const now = new Date();
       const nextBilling = new Date(now);
       nextBilling.setDate(nextBilling.getDate() + 30);
 
-      const noneLimits = PLAN_LIMITS.none;
+      // Trial ends in 3 days from registration
+      const trialEndsAt = new Date(now);
+      trialEndsAt.setDate(trialEndsAt.getDate() + 3);
+
       const org = await tx.organization.create({
         data: {
           name: orgName,
           slug: `${slug}-${Date.now().toString(36)}`,
           logoUrl: logoUrl ?? null,
           plan: "none",
+          trialPlan: selectedPlan,
+          trialEndsAt,
           currency: "USD",
-          maxUsers: noneLimits.users,
-          maxMonthlyInvoices: noneLimits.monthlyInvoices,
-          maxProducts: noneLimits.products,
-          maxCategories: noneLimits.categories,
-          maxBranches: noneLimits.branches,
+          maxUsers: trialLimits.users,
+          maxMonthlyInvoices: trialLimits.monthlyInvoices,
+          maxProducts: trialLimits.products,
+          maxCategories: trialLimits.categories,
+          maxBranches: trialLimits.branches,
           billingCycleStart: now,
           nextBillingDate: nextBilling,
         },
@@ -108,6 +119,16 @@ const auth = new Hono<Env>()
     await db.refreshToken.create({
       data: { token: refreshToken, userId: result.user.id, expiresAt: getRefreshTokenExpiry() },
     });
+
+    // Fire-and-forget trial welcome email
+    sendTrialWelcomeEmail({
+      to: email,
+      name,
+      orgName,
+      trialPlan: selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1),
+      trialEndsAt: result.org.trialEndsAt!,
+      price: trialLimits.price,
+    }).catch((err) => console.error("[REGISTER] Failed to send trial welcome email:", err));
 
     return c.json(
       {
