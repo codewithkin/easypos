@@ -26,7 +26,13 @@ import { BRAND } from "@/lib/theme";
 type ProductWithCategory = Product & {
     category?: { id: string; name: string } | null;
     tags?: { tag: { id: string; name: string } }[];
+    secondaryPrices?: { id: string; name: string; price: number }[];
 };
+
+interface SecondaryPrice {
+    name: string;
+    price: string;
+}
 
 export default function EditProductScreen() {
     const insets = useSafeAreaInsets();
@@ -73,6 +79,7 @@ export default function EditProductScreen() {
     const [imageUri, setImageUri] = useState<string | null>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [imageUploading, setImageUploading] = useState(false);
+    const [secondaryPrices, setSecondaryPrices] = useState<SecondaryPrice[]>([]);
 
     useEffect(() => {
         if (product && !populated) {
@@ -87,6 +94,11 @@ export default function EditProductScreen() {
             if ((product as any).imageUrl) {
                 setImageUri((product as any).imageUrl);
                 setImageUrl((product as any).imageUrl);
+            }
+            if (product.secondaryPrices?.length) {
+                setSecondaryPrices(
+                    product.secondaryPrices.map((sp) => ({ name: sp.name, price: String(sp.price) })),
+                );
             }
             setPopulated(true);
 
@@ -153,6 +165,12 @@ export default function EditProductScreen() {
         body.categoryId = selectedCategory ?? undefined;
         body.tagIds = selectedTags;
         if (imageUrl) body.imageUrl = imageUrl;
+
+        // Add valid secondary prices
+        const validSecondary = secondaryPrices
+            .filter((sp) => sp.name.trim() && sp.price.trim() && !isNaN(parseFloat(sp.price)) && parseFloat(sp.price) > 0)
+            .map((sp) => ({ name: sp.name.trim(), price: parseFloat(sp.price) }));
+        body.secondaryPrices = validSecondary;
 
         updateProduct(body);
     }
@@ -277,6 +295,66 @@ export default function EditProductScreen() {
                                 <Label nativeID="cost">Cost Price</Label>
                                 <Input id="cost" value={cost} onChangeText={setCost} keyboardType="numeric" className="h-11" />
                             </View>
+                        </View>
+
+                        {/* Secondary Prices */}
+                        <View className="mt-4 gap-3">
+                            <View className="flex-row items-center justify-between">
+                                <Text className="text-muted-foreground text-xs uppercase tracking-wider">
+                                    Secondary Prices
+                                </Text>
+                                <Pressable
+                                    onPress={() => setSecondaryPrices((prev) => [...prev, { name: "", price: "" }])}
+                                    className="flex-row items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10"
+                                >
+                                    <Ionicons name="add-circle-outline" size={16} color={BRAND.brand} />
+                                    <Text className="text-primary text-xs font-semibold">Add Price</Text>
+                                </Pressable>
+                            </View>
+                            <Text className="text-muted-foreground text-xs -mt-1">
+                                Optional extra prices (e.g. Wholesale, Bulk). The selling price above stays the default.
+                            </Text>
+                            {secondaryPrices.map((sp, idx) => (
+                                <View key={idx} className="flex-row gap-2 items-end">
+                                    <View className="flex-1 gap-1">
+                                        <Label nativeID={`sp-name-${idx}`}>Label</Label>
+                                        <Input
+                                            id={`sp-name-${idx}`}
+                                            placeholder="e.g. Wholesale"
+                                            value={sp.name}
+                                            onChangeText={(v) =>
+                                                setSecondaryPrices((prev) =>
+                                                    prev.map((p, i) => (i === idx ? { ...p, name: v } : p)),
+                                                )
+                                            }
+                                            className="h-11"
+                                        />
+                                    </View>
+                                    <View className="flex-1 gap-1">
+                                        <Label nativeID={`sp-price-${idx}`}>Price</Label>
+                                        <Input
+                                            id={`sp-price-${idx}`}
+                                            placeholder="0"
+                                            value={sp.price}
+                                            onChangeText={(v) =>
+                                                setSecondaryPrices((prev) =>
+                                                    prev.map((p, i) => (i === idx ? { ...p, price: v } : p)),
+                                                )
+                                            }
+                                            keyboardType="numeric"
+                                            className="h-11"
+                                        />
+                                    </View>
+                                    <Pressable
+                                        onPress={() =>
+                                            setSecondaryPrices((prev) => prev.filter((_, i) => i !== idx))
+                                        }
+                                        className="h-11 w-11 rounded-xl bg-destructive/10 items-center justify-center"
+                                    >
+                                        <Ionicons name="trash-outline" size={18} color="hsl(0 84% 60%)" />
+                                    </Pressable>
+                                </View>
+                            ))}
                         </View>
 
                         <Separator className="my-5" />
