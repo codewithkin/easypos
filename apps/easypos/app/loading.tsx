@@ -73,8 +73,16 @@ export default function LoadingScreen() {
             if (!isAuthenticated) {
                 router.replace("/(auth)/login" as any);
             } else if (user?.org.plan === "none") {
-                // User hasn't selected a plan yet — send them to choose one
-                router.replace("/(app)/billing/plans" as any);
+                // Check if trial is still active
+                const trialActive =
+                    user?.org.trialEndsAt && new Date(user.org.trialEndsAt) > new Date();
+                if (trialActive) {
+                    // Trial is still active — give full app access
+                    router.replace("/(app)" as any);
+                } else {
+                    // Trial expired or no trial — send to billing
+                    router.replace("/(app)/billing/plans" as any);
+                }
             } else {
                 router.replace("/(app)" as any);
             }

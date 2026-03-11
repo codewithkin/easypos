@@ -9,8 +9,17 @@ export default function AppLayout() {
         return <Redirect href="/(auth)/login" />;
     }
 
-    // If user hasn't selected a plan yet, lock them to the plans + confirm flow only
-    if (user?.org.plan === "none") {
+    // Check if user is on trial
+    const isOnTrial =
+        user?.org.plan === "none" &&
+        user?.org.trialEndsAt &&
+        new Date(user.org.trialEndsAt) > new Date();
+
+    const trialExpired =
+        user?.org.plan === "none" && !isOnTrial;
+
+    // If trial expired and no plan, lock to billing only
+    if (trialExpired) {
         return (
             <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
                 <Stack.Screen name="billing/plans" />

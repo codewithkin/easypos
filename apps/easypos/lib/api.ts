@@ -65,11 +65,18 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Handle 401 → auto-refresh + retry; convert AxiosError → ApiError
+// Handle 401 → auto-refresh + retry; 402 → trial expired; convert AxiosError → ApiError
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<{ error?: string; details?: unknown }>) => {
     const original = error.config as RequestWithRetry | undefined;
+
+    // ── 402 Trial Expired → redirect to billing plans ──
+    if (error.response?.status === 402) {
+      const { useAuthStore } = await import("@/store/auth");
+      try { router.replace("/(app)/billing/plans" as any); } catch { /* navigation not ready */ }
+      throw new ApiError(402, "Your free trial has ended. Please subscribe to continue.");
+    }
 
     if (error.response?.status === 401 && original && !original._retry) {
       original._retry = true;
