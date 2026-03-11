@@ -42,6 +42,7 @@ const sales = new Hono<Env>()
     const productIds = items.map((i) => i.productId);
     const products = await db.product.findMany({
       where: { id: { in: productIds }, orgId, isActive: true },
+      include: { secondaryPrices: true },
     });
 
     if (products.length !== productIds.length) {
@@ -52,12 +53,24 @@ const sales = new Hono<Env>()
 
     const saleItems = items.map((item) => {
       const product = productMap.get(item.productId)!;
-      const subtotal = product.price * item.quantity;
+
+      // Use client-provided unitPrice if given, otherwise default to primary price
+      let unitPrice = product.price;
+      if (item.unitPrice != null) {
+        // Validate unitPrice matches primary or one of the secondary prices
+        const validPrices = [product.price, ...product.secondaryPrices.map((sp: any) => sp.price)];
+        if (validPrices.includes(item.unitPrice)) {
+          unitPrice = item.unitPrice;
+        }
+        // If it doesn't match, silently fall back to primary price for safety
+      }
+
+      const subtotal = unitPrice * item.quantity;
       return {
         productId: product.id,
         productName: product.name,
         quantity: item.quantity,
-        unitPrice: product.price,
+        unitPrice,
         total: subtotal,
       };
     });
