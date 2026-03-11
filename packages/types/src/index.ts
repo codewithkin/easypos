@@ -99,6 +99,15 @@ export const tagSchema = z.object({
 });
 export type Tag = z.infer<typeof tagSchema>;
 
+export const productPriceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  price: z.number(),
+  productId: z.string(),
+  createdAt: z.coerce.date(),
+});
+export type ProductPrice = z.infer<typeof productPriceSchema>;
+
 export const productSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -110,6 +119,7 @@ export const productSchema = z.object({
   isActive: z.boolean(),
   categoryId: z.string().nullable(),
   orgId: z.string(),
+  secondaryPrices: z.array(productPriceSchema).optional(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 });
@@ -250,6 +260,12 @@ export const createCategoryRequestSchema = z.object({
 });
 export type CreateCategoryRequest = z.infer<typeof createCategoryRequestSchema>;
 
+export const secondaryPriceInputSchema = z.object({
+  name: z.string().min(1),
+  price: z.number().positive(),
+});
+export type SecondaryPriceInput = z.infer<typeof secondaryPriceInputSchema>;
+
 export const createProductRequestSchema = z.object({
   name: z.string().min(1),
   imageUrl: z.string().url().optional(),
@@ -259,6 +275,7 @@ export const createProductRequestSchema = z.object({
   categoryId: z.string().optional(),
   isActive: z.boolean().optional(),
   tagIds: z.array(z.string()).optional(),
+  secondaryPrices: z.array(secondaryPriceInputSchema).optional(),
 });
 export type CreateProductRequest = z.infer<typeof createProductRequestSchema>;
 
@@ -274,6 +291,7 @@ export const createSaleRequestSchema = z.object({
       z.object({
         productId: z.string(),
         quantity: z.number().int().positive(),
+        unitPrice: z.number().positive().optional(),
       }),
     )
     .min(1),
