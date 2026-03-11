@@ -11,6 +11,7 @@ import { useState } from "react";
 import { Text } from "@/components/ui/text";
 import { Separator } from "@/components/ui/separator";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { TrialBanner } from "@/components/trial-banner";
 import { useAuthStore } from "@/store/auth";
 import { useRole } from "@/hooks/use-role";
 import { BRAND } from "@/lib/theme";
@@ -52,6 +53,9 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
 
     return (
         <View className="flex-1 bg-card" style={{ paddingTop: insets.top }}>
+            {/* ── Trial Banner ── */}
+            <TrialBanner />
+
             {/* ── Brand Header ── */}
             <View className="px-5 pt-5 pb-4">
                 <View className="flex-row items-center gap-3">
