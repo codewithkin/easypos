@@ -37,6 +37,7 @@ const products = new Hono<Env>()
         include: {
           category: { select: { id: true, name: true } },
           tags: { include: { tag: true } },
+          secondaryPrices: { orderBy: { createdAt: "asc" } },
         },
         skip: getPaginationSkip(page, pageSize),
         take: pageSize,
@@ -58,6 +59,7 @@ const products = new Hono<Env>()
       include: {
         category: { select: { id: true, name: true } },
         tags: { include: { tag: true } },
+        secondaryPrices: { orderBy: { createdAt: "asc" } },
       },
     });
 
@@ -84,7 +86,7 @@ const products = new Hono<Env>()
       if (++skuAttempts > 10) sku = `PROD-${Date.now().toString(36).toUpperCase()}`;
     }
 
-    const { tagIds, ...productData } = data as any;
+    const { tagIds, secondaryPrices, ...productData } = data as any;
 
     const product = await db.product.create({
       data: {
@@ -94,10 +96,19 @@ const products = new Hono<Env>()
         ...(tagIds?.length && {
           tags: { create: tagIds.map((tagId: string) => ({ tagId })) },
         }),
+        ...(secondaryPrices?.length && {
+          secondaryPrices: {
+            create: secondaryPrices.map((sp: { name: string; price: number }) => ({
+              name: sp.name,
+              price: sp.price,
+            })),
+          },
+        }),
       },
       include: {
         category: { select: { id: true, name: true } },
         tags: { include: { tag: true } },
+        secondaryPrices: { orderBy: { createdAt: "asc" } },
       },
     });
 
@@ -121,7 +132,7 @@ const products = new Hono<Env>()
       if (skuTaken) return c.json({ error: "SKU already in use by another product" }, 409);
     }
 
-    const { tagIds, ...updateData } = data as any;
+    const { tagIds, secondaryPrices, ...updateData } = data as any;
 
     // If tagIds provided, replace all tag associations
     if (tagIds !== undefined) {
@@ -133,12 +144,27 @@ const products = new Hono<Env>()
       }
     }
 
+    // If secondaryPrices provided, replace all secondary prices
+    if (secondaryPrices !== undefined) {
+      await db.productPrice.deleteMany({ where: { productId: id } });
+      if (secondaryPrices.length > 0) {
+        await db.productPrice.createMany({
+          data: secondaryPrices.map((sp: { name: string; price: number }) => ({
+            productId: id,
+            name: sp.name,
+            price: sp.price,
+          })),
+        });
+      }
+    }
+
     const product = await db.product.update({
       where: { id },
       data: updateData,
       include: {
         category: { select: { id: true, name: true } },
         tags: { include: { tag: true } },
+        secondaryPrices: { orderBy: { createdAt: "asc" } },
       },
     });
 
