@@ -214,10 +214,25 @@ model Product {
   org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   saleItems SaleItem[]
   tags      ProductTag[]
+  secondaryPrices ProductPrice[]
 
   @@unique([sku, orgId])
   @@index([orgId])
   @@index([categoryId])
+}
+
+// ── Product Prices (secondary / alternate prices) ──────────────────
+
+model ProductPrice {
+  id        String   @id @default(cuid())
+  name      String          // e.g. "Wholesale", "Bulk", "VIP"
+  price     Float
+  productId String
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
 }
 
 // ── Product Tags ───────────────────────────────────────────────────
