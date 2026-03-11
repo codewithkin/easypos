@@ -15,6 +15,10 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
 import { api, ApiError, http } from "@/lib/api";
 import { toast } from "@/lib/toast";
+import { BRAND } from "@/lib/theme";
+import { cn } from "@/lib/utils";
+import plans from "@/lib/plans";
+import type { Plan } from "@easypos/types";
 import * as Haptics from "expo-haptics";
 
 // ── Logo picker helpers ────────────────────────────────────────────
@@ -87,6 +91,7 @@ export default function RegisterScreen() {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [trialPlan, setTrialPlan] = useState<"starter" | "growth" | "enterprise">("growth");
 
     // Logo state
     const [logoUri, setLogoUri] = useState<string | null>(null);
@@ -139,6 +144,7 @@ export default function RegisterScreen() {
                 name: name.trim(),
                 email: email.trim(),
                 password,
+                trialPlan,
                 ...(logoUrl ? { logoUrl } : {}),
             });
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -212,6 +218,76 @@ export default function RegisterScreen() {
                             <Text className="text-primary text-xs font-medium">Change photo</Text>
                         </Pressable>
                     )}
+                </View>
+
+                {/* ── Trial Plan Picker ── */}
+                <View className="mb-6">
+                    <Text className="text-foreground font-medium text-sm mb-1">
+                        Choose Your Trial Plan
+                    </Text>
+                    <Text className="text-muted-foreground text-xs mb-3">
+                        Get 3 days free on any plan. No payment required.
+                    </Text>
+
+                    <View className="gap-2.5">
+                        {plans.map((plan) => {
+                            const selected = trialPlan === plan.key;
+                            return (
+                                <Pressable
+                                    key={plan.key}
+                                    onPress={() => setTrialPlan(plan.key as "starter" | "growth" | "enterprise")}
+                                    className={cn(
+                                        "rounded-xl border-2 p-3.5",
+                                        selected ? "border-primary bg-primary/5" : "border-border bg-card",
+                                    )}
+                                >
+                                    <View className="flex-row items-center justify-between">
+                                        <View className="flex-row items-center gap-2.5 flex-1">
+                                            <View
+                                                className={cn(
+                                                    "w-5 h-5 rounded-full border-2 items-center justify-center",
+                                                    selected ? "border-primary bg-primary" : "border-muted-foreground/40",
+                                                )}
+                                            >
+                                                {selected && (
+                                                    <Ionicons name="checkmark" size={12} color="#fff" />
+                                                )}
+                                            </View>
+                                            <View className="flex-1">
+                                                <View className="flex-row items-center gap-2">
+                                                    <Text className={cn(
+                                                        "font-bold text-sm",
+                                                        selected ? "text-primary" : "text-foreground",
+                                                    )}>
+                                                        {plan.name}
+                                                    </Text>
+                                                    {plan.popular && (
+                                                        <View className="bg-primary/10 px-2 py-0.5 rounded-full">
+                                                            <Text className="text-primary text-[10px] font-bold">
+                                                                POPULAR
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                                <Text className="text-muted-foreground text-xs mt-0.5">
+                                                    {plan.features.slice(0, 2).join(" · ")}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <View className="items-end ml-2">
+                                            <Text className={cn(
+                                                "font-extrabold text-base",
+                                                selected ? "text-primary" : "text-foreground",
+                                            )}>
+                                                ${plan.price}
+                                            </Text>
+                                            <Text className="text-muted-foreground text-[10px]">/mo after trial</Text>
+                                        </View>
+                                    </View>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
                 </View>
 
                 {/* Form */}
