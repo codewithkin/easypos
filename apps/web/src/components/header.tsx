@@ -12,7 +12,6 @@ import {
   SheetTitle,
   SheetClose,
 } from "@/components/ui/sheet";
-import { ModeToggle } from "./mode-toggle";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -54,7 +53,6 @@ export default function Header() {
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-3 md:flex">
-          <ModeToggle />
           <Button size="lg" render={<a href={downloadUrl} />}>
             <Download className="mr-2 h-4 w-4" />
             Download App
@@ -63,7 +61,6 @@ export default function Header() {
 
         {/* Mobile: toggle + sheet */}
         <div className="flex items-center gap-2 md:hidden">
-          <ModeToggle />
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger
               render={<Button variant="ghost" size="icon" />}
