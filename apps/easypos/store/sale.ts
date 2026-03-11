@@ -6,6 +6,8 @@ import type { Product, PaymentMethod } from "@easypos/types";
 export interface CartItem {
     product: Product;
     quantity: number;
+    selectedPrice: number;
+    selectedPriceLabel: string | null;   // null = primary price
 }
 
 // ── Customer selection ─────────────────────────────────────────────
@@ -60,6 +62,7 @@ interface SaleState {
     addToCart: (product: Product) => void;
     setQuantity: (productId: string, qty: number) => void;
     removeFromCart: (productId: string) => void;
+    setCartItemPrice: (productId: string, price: number, label: string | null) => void;
     clearCart: () => void;
 
     // Customer
@@ -106,7 +109,7 @@ export const useSaleStore = create<SaleState>((set) => ({
         set((s) => {
             const existing = s.cart.find((i) => i.product.id === product.id);
             if (existing) return s; // first tap adds, subsequent ignored
-            return { cart: [...s.cart, { product, quantity: 1 }] };
+            return { cart: [...s.cart, { product, quantity: 1, selectedPrice: product.price, selectedPriceLabel: null }] };
         }),
 
     setQuantity: (productId, qty) =>
@@ -118,6 +121,15 @@ export const useSaleStore = create<SaleState>((set) => ({
 
     removeFromCart: (productId) =>
         set((s) => ({ cart: s.cart.filter((i) => i.product.id !== productId) })),
+
+    setCartItemPrice: (productId, price, label) =>
+        set((s) => ({
+            cart: s.cart.map((i) =>
+                i.product.id === productId
+                    ? { ...i, selectedPrice: price, selectedPriceLabel: label }
+                    : i,
+            ),
+        })),
 
     clearCart: () => set({ cart: [] }),
 
@@ -164,7 +176,7 @@ export const useSaleStore = create<SaleState>((set) => ({
 // ── Selectors (pure functions, not in the store) ───────────────────
 
 export function cartTotal(cart: CartItem[]): number {
-    return cart.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+    return cart.reduce((sum, i) => sum + i.selectedPrice * i.quantity, 0);
 }
 
 export function cartItemCount(cart: CartItem[]): number {
