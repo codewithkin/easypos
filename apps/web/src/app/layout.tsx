@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import "../index.css";
 import Header from "@/components/header";
+import Footer from "@/components/footer";
 import Providers from "@/components/providers";
 
 const geistSans = Geist({
@@ -17,8 +18,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "easypos",
-  description: "easypos",
+  title: "EasyPOS — Modern Point of Sale for Small Business",
+  description:
+    "Fast, reliable point-of-sale software for small and growing businesses. Manage sales, products, inventory, and customers from your phone.",
 };
 
 export default function RootLayout({
@@ -30,9 +32,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers>
-          <div className="grid grid-rows-[auto_1fr] h-svh">
+          <div className="flex min-h-svh flex-col">
             <Header />
-            {children}
+            <main className="flex-1">{children}</main>
+            <Footer />
           </div>
         </Providers>
       </body>
