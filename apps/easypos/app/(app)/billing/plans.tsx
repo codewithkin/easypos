@@ -19,6 +19,7 @@ export default function PlansScreen() {
     const insets = useSafeAreaInsets();
     const user = useAuthStore((s) => s.user);
     const currentPlan = user?.org.plan ?? "none";
+    const trialPlan = user?.org.trialPlan ?? null;
     const isFirstTime = currentPlan === "none";
     const [loadingPlan, setLoadingPlan] = useState<Plan | null>(null);
 
@@ -76,12 +77,12 @@ export default function PlansScreen() {
                         </View>
                         <Text className="text-foreground text-xl font-bold text-center">
                             {isFirstTime
-                                ? "Welcome! Let's get you started"
+                                ? "Subscribe to Keep Using EasyPOS"
                                 : "Select the right plan for your business"}
                         </Text>
                         <Text className="text-muted-foreground text-sm text-center mt-1.5 leading-5 px-4">
                             {isFirstTime
-                                ? "Pick a plan to unlock EasyPOS and start selling today."
+                                ? "Your free trial is ending soon. Pick a plan to continue selling."
                                 : "All plans include overage protection at $0.02/unit"}
                         </Text>
                     </View>
@@ -89,6 +90,7 @@ export default function PlansScreen() {
                     {/* Plan cards */}
                     {plans.map((plan) => {
                         const isCurrent = currentPlan === plan.key;
+                        const isTrial = isFirstTime && trialPlan === plan.key;
                         const isLoading = loadingPlan === plan.key;
                         const isDisabled = loadingPlan !== null;
 
@@ -97,16 +99,18 @@ export default function PlansScreen() {
                                 key={plan.key}
                                 className={cn(
                                     "mb-4 rounded-2xl border-2 bg-card overflow-hidden",
-                                    plan.popular
+                                    isTrial
                                         ? "border-primary"
-                                        : "border-border",
+                                        : plan.popular
+                                            ? "border-primary"
+                                            : "border-border",
                                 )}
                             >
-                                {/* Popular badge */}
-                                {plan.popular && (
+                                {/* Popular / Trial badge */}
+                                {(plan.popular || isTrial) && (
                                     <View className="bg-primary py-1.5">
                                         <Text className="text-primary-foreground text-xs font-bold text-center tracking-wide uppercase">
-                                            Most Popular
+                                            {isTrial ? "Your Trial Plan" : "Most Popular"}
                                         </Text>
                                     </View>
                                 )}
