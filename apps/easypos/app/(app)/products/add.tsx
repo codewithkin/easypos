@@ -25,6 +25,11 @@ interface Field {
     stock: string;
 }
 
+interface SecondaryPrice {
+    name: string;
+    price: string;
+}
+
 export default function AddProductScreen() {
     const insets = useSafeAreaInsets();
     const [fields, setFields] = useState<Field>({
@@ -40,6 +45,7 @@ export default function AddProductScreen() {
     const [imageUri, setImageUri] = useState<string | null>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [imageUploading, setImageUploading] = useState(false);
+    const [secondaryPrices, setSecondaryPrices] = useState<SecondaryPrice[]>([]);
 
     const { data: categoriesData } = useApiQuery<{ items: Category[] }>({
         queryKey: ["categories"],
@@ -124,6 +130,12 @@ export default function AddProductScreen() {
         if (selectedCategory) body.categoryId = selectedCategory;
         if (selectedTags.length > 0) body.tagIds = selectedTags;
         if (imageUrl) body.imageUrl = imageUrl;
+
+        // Add valid secondary prices
+        const validSecondary = secondaryPrices
+            .filter((sp) => sp.name.trim() && sp.price.trim() && !isNaN(parseFloat(sp.price)) && parseFloat(sp.price) > 0)
+            .map((sp) => ({ name: sp.name.trim(), price: parseFloat(sp.price) }));
+        if (validSecondary.length > 0) body.secondaryPrices = validSecondary;
 
         createProduct(body);
     }
