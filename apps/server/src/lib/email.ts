@@ -189,3 +189,169 @@ export async function sendPasswordResetEmail(opts: {
     html: baseTemplate(content),
   });
 }
+
+// ── Email: Trial Welcome ───────────────────────────────────────────
+
+export async function sendTrialWelcomeEmail(opts: {
+  to: string;
+  name: string;
+  orgName: string;
+  trialPlan: string;
+  trialEndsAt: Date;
+  price: number;
+}) {
+  const trialEndStr = opts.trialEndsAt.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const content = `
+    <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#fafafa;">
+      Welcome to EasyPOS! 🎉
+    </h1>
+    <p style="margin:0 0 24px;font-size:15px;color:#a3a3a3;line-height:1.6;">
+      Hi <strong style="color:#fafafa;">${opts.name}</strong>, your <strong style="color:#16a34a;">${opts.trialPlan}</strong> free trial for
+      <strong style="color:#fafafa;">${opts.orgName}</strong> is now active.
+    </p>
+
+    <div style="background:#1a1a1a;border:1px solid #262626;border-radius:12px;padding:24px;margin-bottom:28px;">
+      <p style="margin:0 0 16px;font-size:12px;font-weight:600;color:#525252;text-transform:uppercase;letter-spacing:1px;">Trial Details</p>
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid #262626;">
+            <span style="font-size:13px;color:#737373;">Plan</span>
+          </td>
+          <td style="padding:8px 0;border-bottom:1px solid #262626;text-align:right;">
+            <span style="font-size:13px;font-weight:600;color:#16a34a;">${opts.trialPlan} (Free Trial)</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid #262626;">
+            <span style="font-size:13px;color:#737373;">Trial Ends</span>
+          </td>
+          <td style="padding:8px 0;border-bottom:1px solid #262626;text-align:right;">
+            <span style="font-size:13px;font-weight:600;color:#fafafa;">${trialEndStr}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;">
+            <span style="font-size:13px;color:#737373;">Price After Trial</span>
+          </td>
+          <td style="padding:8px 0;text-align:right;">
+            <span style="font-size:13px;font-weight:600;color:#fafafa;">$${opts.price}/month</span>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="margin:0 0 24px;font-size:13px;color:#a3a3a3;line-height:1.6;">
+      You have full access to all ${opts.trialPlan} features for 3 days. After your trial ends on <strong style="color:#fafafa;">${trialEndStr}</strong>,
+      subscribe to keep using EasyPOS.
+    </p>
+
+    <p style="margin:0;font-size:13px;color:#525252;text-align:center;">
+      Start exploring EasyPOS and set up your products, team, and more!
+    </p>
+  `;
+
+  await transporter.sendMail({
+    from: env.SMTP_FROM,
+    to: opts.to,
+    subject: `Welcome to EasyPOS — Your ${opts.trialPlan} trial is active!`,
+    html: baseTemplate(content),
+  });
+}
+
+// ── Email: Subscription Invoice ────────────────────────────────────
+
+export async function sendSubscriptionInvoiceEmail(opts: {
+  to: string;
+  name: string;
+  orgName: string;
+  planName: string;
+  amount: number;
+  currency: string;
+  billingCycleStart: Date;
+  nextBillingDate: Date;
+  paymentId: string;
+}) {
+  const billingStartStr = opts.billingCycleStart.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const nextBillingStr = opts.nextBillingDate.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const content = `
+    <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#fafafa;">
+      Subscription Confirmed ✅
+    </h1>
+    <p style="margin:0 0 24px;font-size:15px;color:#a3a3a3;line-height:1.6;">
+      Hi <strong style="color:#fafafa;">${opts.name}</strong>, your subscription for
+      <strong style="color:#fafafa;">${opts.orgName}</strong> has been activated. Here's your invoice:
+    </p>
+
+    <div style="background:#1a1a1a;border:1px solid #262626;border-radius:12px;padding:24px;margin-bottom:28px;">
+      <p style="margin:0 0 16px;font-size:12px;font-weight:600;color:#525252;text-transform:uppercase;letter-spacing:1px;">Invoice</p>
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid #262626;">
+            <span style="font-size:13px;color:#737373;">Reference</span>
+          </td>
+          <td style="padding:8px 0;border-bottom:1px solid #262626;text-align:right;">
+            <code style="font-size:12px;color:#fafafa;background:#262626;padding:2px 8px;border-radius:4px;">${opts.paymentId}</code>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid #262626;">
+            <span style="font-size:13px;color:#737373;">Plan</span>
+          </td>
+          <td style="padding:8px 0;border-bottom:1px solid #262626;text-align:right;">
+            <span style="font-size:13px;font-weight:600;color:#16a34a;">${opts.planName}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid #262626;">
+            <span style="font-size:13px;color:#737373;">Amount</span>
+          </td>
+          <td style="padding:8px 0;border-bottom:1px solid #262626;text-align:right;">
+            <span style="font-size:16px;font-weight:700;color:#fafafa;">$${opts.amount} ${opts.currency}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid #262626;">
+            <span style="font-size:13px;color:#737373;">Billing Period Start</span>
+          </td>
+          <td style="padding:8px 0;border-bottom:1px solid #262626;text-align:right;">
+            <span style="font-size:13px;color:#fafafa;">${billingStartStr}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;">
+            <span style="font-size:13px;color:#737373;">Next Billing Date</span>
+          </td>
+          <td style="padding:8px 0;text-align:right;">
+            <span style="font-size:13px;font-weight:600;color:#fafafa;">${nextBillingStr}</span>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="margin:0;font-size:13px;color:#525252;text-align:center;line-height:1.6;">
+      Thank you for choosing EasyPOS! Your plan is now active and you have full access to all features.
+    </p>
+  `;
+
+  await transporter.sendMail({
+    from: env.SMTP_FROM,
+    to: opts.to,
+    subject: `EasyPOS Invoice — ${opts.planName} Plan ($${opts.amount})`,
+    html: baseTemplate(content),
+  });
+}
