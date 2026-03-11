@@ -46,7 +46,7 @@ interface CreatedCustomer {
 }
 
 interface CreateSaleBody {
-    items: { productId: string; quantity: number }[];
+    items: { productId: string; quantity: number; unitPrice?: number }[];
     paymentMethod: PaymentMethod;
     customerId?: string;
     discount?: number;
@@ -149,7 +149,11 @@ export default function CreateSaleScreen() {
 
     function doCreateSale(customerId?: string) {
         const body: CreateSaleBody = {
-            items: cart.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+            items: cart.map((i) => ({
+                productId: i.product.id,
+                quantity: i.quantity,
+                ...(i.selectedPriceLabel ? { unitPrice: i.selectedPrice } : {}),
+            })),
             paymentMethod: payment.method,
         };
 

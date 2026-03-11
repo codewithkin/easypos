@@ -52,10 +52,11 @@ export function SummaryStep() {
                                 </View>
                                 <View className="items-end">
                                     <Text className="text-primary text-sm font-bold">
-                                        {formatCurrency(item.product.price * item.quantity)}
+                                        {formatCurrency(item.selectedPrice * item.quantity)}
                                     </Text>
                                     <Text className="text-muted-foreground text-xs">
-                                        {item.quantity} × {formatCurrency(item.product.price)}
+                                        {item.quantity} × {formatCurrency(item.selectedPrice)}
+                                        {item.selectedPriceLabel ? ` (${item.selectedPriceLabel})` : ""}
                                     </Text>
                                 </View>
                             </View>

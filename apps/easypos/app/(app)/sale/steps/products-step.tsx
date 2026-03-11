@@ -17,6 +17,7 @@ import { QuantityControl } from "@/components/quantity-control";
 import { useApiQuery } from "@/hooks/use-api";
 import { useAuthStore } from "@/store/auth";
 import { useSaleStore, cartItemCount, cartTotal } from "@/store/sale";
+import type { CartItem } from "@/store/sale";
 import { formatCurrency } from "@easypos/utils";
 import type { Category, Product } from "@easypos/types";
 import { cn } from "@/lib/utils";
@@ -54,7 +55,7 @@ export function ProductsStep({
         path: "/categories",
     });
 
-    const { cart, addToCart, setQuantity } = useSaleStore();
+    const { cart, addToCart, setQuantity, setCartItemPrice } = useSaleStore();
 
     const categories = categoriesData?.items ?? [];
     const products = productsData?.items ?? [];
@@ -81,6 +82,10 @@ export function ProductsStep({
         return cart.find((i) => i.product.id === id)?.quantity ?? 0;
     }
 
+    function getCartItem(id: string): CartItem | undefined {
+        return cart.find((i) => i.product.id === id);
+    }
+
     function handleTap(product: Product) {
         const qty = getCartQty(product.id);
         if (qty > 0) return; // subsequent taps ignored
@@ -91,6 +96,8 @@ export function ProductsStep({
     function renderProduct({ item }: { item: ProductWithCategory }) {
         const qty = getCartQty(item.id);
         const inCart = qty > 0;
+        const cartItem = getCartItem(item.id);
+        const hasSecondary = (item.secondaryPrices?.length ?? 0) > 0;
 
         return (
             <Pressable
@@ -146,9 +153,12 @@ export function ProductsStep({
                     </Text>
                     <View className="flex-row items-baseline justify-between">
                         <Text className="text-primary font-bold text-base">
-                            {formatCurrency(item.price, user?.org.currency)}
+                            {formatCurrency(cartItem?.selectedPrice ?? item.price, user?.org.currency)}
                         </Text>
-                        {item.category && (
+                        {cartItem?.selectedPriceLabel && (
+                            <Text className="text-muted-foreground text-[10px]">{cartItem.selectedPriceLabel}</Text>
+                        )}
+                        {!cartItem?.selectedPriceLabel && item.category && (
                             <Text className="text-muted-foreground text-xs">{item.sku}</Text>
                         )}
                     </View>
@@ -169,6 +179,47 @@ export function ProductsStep({
                                     </Text>
                                 </View>
                             )}
+                        </View>
+                    )}
+
+                    {/* Secondary price selector — only when in cart and product has secondary prices */}
+                    {inCart && hasSecondary && (
+                        <View className="mt-2 pt-2 border-t border-border gap-1.5">
+                            <Pressable
+                                onPress={() => {
+                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    setCartItemPrice(item.id, item.price, null);
+                                }}
+                                className={cn(
+                                    "px-2.5 py-1.5 rounded-lg border",
+                                    cartItem?.selectedPriceLabel === null
+                                        ? "bg-primary/10 border-primary"
+                                        : "bg-secondary border-border",
+                                )}
+                            >
+                                <Text className={cn("text-[10px] font-medium", cartItem?.selectedPriceLabel === null ? "text-primary" : "text-foreground")}>
+                                    Default · {formatCurrency(item.price, user?.org.currency)}
+                                </Text>
+                            </Pressable>
+                            {item.secondaryPrices!.map((sp) => (
+                                <Pressable
+                                    key={sp.id}
+                                    onPress={() => {
+                                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                        setCartItemPrice(item.id, sp.price, sp.name);
+                                    }}
+                                    className={cn(
+                                        "px-2.5 py-1.5 rounded-lg border",
+                                        cartItem?.selectedPriceLabel === sp.name
+                                            ? "bg-primary/10 border-primary"
+                                            : "bg-secondary border-border",
+                                    )}
+                                >
+                                    <Text className={cn("text-[10px] font-medium", cartItem?.selectedPriceLabel === sp.name ? "text-primary" : "text-foreground")}>
+                                        {sp.name} · {formatCurrency(sp.price, user?.org.currency)}
+                                    </Text>
+                                </Pressable>
+                            ))}
                         </View>
                     )}
                 </View>
