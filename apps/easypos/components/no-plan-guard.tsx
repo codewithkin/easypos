@@ -34,13 +34,21 @@ export function NoPlanGuard({ children }: NoPlanGuardProps) {
     const user = useAuthStore((s) => s.user);
     const isNoPlan = user?.org.plan === "none";
 
+    // Allow access during an active trial
+    const isOnTrial =
+        isNoPlan &&
+        user?.org.trialEndsAt &&
+        new Date(user.org.trialEndsAt) > new Date();
+
+    const shouldBlock = isNoPlan && !isOnTrial;
+
     useEffect(() => {
-        if (isNoPlan) {
+        if (shouldBlock) {
             router.replace("/(app)/billing/plans");
         }
-    }, [isNoPlan]);
+    }, [shouldBlock]);
 
-    if (isNoPlan) {
+    if (shouldBlock) {
         return <NoPlanScreen />;
     }
 

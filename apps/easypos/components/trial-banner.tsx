@@ -21,11 +21,12 @@ export function TrialBanner() {
 
         const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
         const hours = Math.ceil(diff / (1000 * 60 * 60));
+        const seconds = Math.ceil(diff / 1000);
 
         return {
             days,
             hours,
-            label: days >= 1 ? `${days} day${days !== 1 ? "s" : ""} left` : `${hours}h left`,
+            label: days >= 1 ? `${days} day${days !== 1 ? "s" : ""} left` : hours >= 1 ? `${hours}h left` : `${seconds}s left`,
             urgent: days <= 1,
             planName: user.org.trialPlan
                 ? user.org.trialPlan.charAt(0).toUpperCase() + user.org.trialPlan.slice(1)

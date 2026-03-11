@@ -74,9 +74,13 @@ const auth = new Hono<Env>()
       const nextBilling = new Date(now);
       nextBilling.setDate(nextBilling.getDate() + 30);
 
-      // Trial ends in 3 days from registration
+      // Trial duration: 15 seconds in dev for testing, 72 hours (3 days) in production
       const trialEndsAt = new Date(now);
-      trialEndsAt.setDate(trialEndsAt.getDate() + 3);
+      if (process.env.NODE_ENV === "production") {
+        trialEndsAt.setTime(trialEndsAt.getTime() + 72 * 60 * 60 * 1000); // 72 hours
+      } else {
+        trialEndsAt.setTime(trialEndsAt.getTime() + 15 * 1000); // 15 seconds
+      }
 
       const org = await tx.organization.create({
         data: {

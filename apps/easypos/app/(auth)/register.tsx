@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import plans from "@/lib/plans";
 import type { Plan } from "@easypos/types";
 import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
 
 // ── Logo picker helpers ────────────────────────────────────────────
 
@@ -148,6 +149,8 @@ export default function RegisterScreen() {
                 ...(logoUrl ? { logoUrl } : {}),
             });
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            // Navigate directly to dashboard — user has an active trial
+            router.replace("/(app)" as any);
         } catch (err) {
             const message = err instanceof ApiError ? err.message : "Something went wrong";
             toast.error(message);
