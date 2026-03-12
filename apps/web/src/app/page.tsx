@@ -302,16 +302,13 @@ export default function Home() {
             <motion.div className="flex justify-center" variants={fadeUp} transition={{ duration: 0.5 }}>
               <div className="relative">
                 <div className="mx-auto w-[220px] overflow-hidden rounded-[2rem] border-[6px] border-foreground/[0.07] bg-secondary shadow-2xl sm:w-[260px]">
-                  <div className="flex aspect-[9/19] flex-col items-center justify-center gap-2 bg-gradient-to-b from-primary/5 to-primary/10 p-4">
-                    <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-                      <Receipt className="h-6 w-6 text-primary" />
-                    </div>
-                    <p className="text-center text-[10px] font-semibold text-muted-foreground">
-                      [CHECKOUT SCREENSHOT]
-                    </p>
-                    <p className="px-2 text-center text-[9px] leading-tight text-muted-foreground/70">
-                      Replace with EasyPOS cart/checkout screen showing items, totals and payment methods
-                    </p>
+                  <div className="relative aspect-[9/19]">
+                    <Image
+                      src="/screenshots/sales/new-sale-products.jpg"
+                      alt="EasyPOS checkout screen showing product grid with cart"
+                      fill
+                      className="object-cover object-top"
+                    />
                   </div>
                 </div>
                 <div className="absolute left-1/2 top-0 h-5 w-14 -translate-x-1/2 rounded-b-xl bg-foreground/[0.07]" />
