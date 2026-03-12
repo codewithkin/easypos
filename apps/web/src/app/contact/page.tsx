@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Mail, Phone, Send, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -61,22 +62,21 @@ export default function ContactPage() {
               className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"
               variants={fadeUp}
             >
-              Contact Us
+              Let's Connect
             </motion.span>
             <motion.h1
               className="mt-4 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl"
               variants={fadeUp}
               transition={{ duration: 0.5 }}
             >
-              Get in <span className="text-primary">touch</span>
+              Have Questions? <span className="text-primary">I'd Love to Hear</span> From You
             </motion.h1>
             <motion.p
               className="mt-6 text-lg text-muted-foreground"
               variants={fadeUp}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              Have a question, feedback, or need help? We&apos;d love to hear
-              from you. Our team typically responds within 24 hours.
+              Whether you&apos;re curious about EasyPOS, have a feature request, found a bug, or just want to chat about your business—reach out. I read every message personally.
             </motion.p>
           </motion.div>
         </div>
@@ -98,15 +98,14 @@ export default function ContactPage() {
                 variants={fadeUp}
                 transition={{ duration: 0.5 }}
               >
-                Send us a message
+                Send me a message
               </motion.h2>
               <motion.p
                 className="mt-2 text-sm text-muted-foreground"
                 variants={fadeUp}
                 transition={{ duration: 0.5, delay: 0.05 }}
               >
-                Fill out the form and we&apos;ll get back to you as soon as
-                possible.
+                Feedback? Questions? A bug to report? Type it out and I'll get back to you within 24 hours.
               </motion.p>
 
               {submitted ? (
@@ -123,8 +122,7 @@ export default function ContactPage() {
                     Message sent!
                   </h3>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Thank you for reaching out. We&apos;ll get back to you
-                    within 24 hours.
+                    Thanks for reaching out. I'll read your message and get back to you soon.
                   </p>
                 </motion.div>
               ) : (
@@ -213,7 +211,7 @@ export default function ContactPage() {
               )}
             </motion.div>
 
-            {/* Contact info + map */}
+            {/* Contact info + app screenshot */}
             <motion.div
               initial="hidden"
               whileInView="visible"
@@ -225,14 +223,14 @@ export default function ContactPage() {
                 variants={fadeUp}
                 transition={{ duration: 0.5 }}
               >
-                Contact information
+                Get in touch
               </motion.h2>
               <motion.p
                 className="mt-2 text-sm text-muted-foreground"
                 variants={fadeUp}
                 transition={{ duration: 0.5, delay: 0.05 }}
               >
-                Reach out through any of these channels.
+                Connect via email, phone, or jump on a quick call.
               </motion.p>
 
               <motion.div
@@ -260,6 +258,24 @@ export default function ContactPage() {
                   </a>
                 ))}
               </motion.div>
+
+              {/* App screenshot */}
+              <motion.div
+                className="mt-8 overflow-hidden rounded-3xl border border-border bg-white shadow-sm"
+                variants={fadeUp}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <div className="flex aspect-[4/3] items-center justify-center overflow-hidden bg-gradient-to-br from-primary/5 to-primary/10 p-4">
+                  <div className="relative h-full w-full max-w-[240px]">
+                    <Image
+                      src="/screenshots/dashboard/dashboard-home.jpg"
+                      alt="EasyPOS dashboard showing sales and business metrics"
+                      fill
+                      className="object-cover object-top rounded-2xl"
+                    />
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
           </div>
         </div>
@@ -281,14 +297,14 @@ export default function ContactPage() {
               variants={fadeUp}
               transition={{ duration: 0.5 }}
             >
-              Rather try it yourself?
+              Still on the fence?
             </motion.h2>
             <motion.p
               className="mt-4 text-base text-white/80"
               variants={fadeUp}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              Download EasyPOS and explore all features with a free trial.
+              Download EasyPOS free for 3 days. No commitments, no credit card required.
             </motion.p>
             <motion.div
               className="mt-8"

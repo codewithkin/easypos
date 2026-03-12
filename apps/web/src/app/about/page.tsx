@@ -26,48 +26,48 @@ const stagger = {
 };
 
 const companyStats = [
-  { value: "500+", label: "Businesses Served" },
-  { value: "3", label: "Years Building" },
-  { value: "50K+", label: "Products Tracked" },
-  { value: "4.8 ★", label: "Average Rating" },
+  { value: "1", label: "Founder (That's Me!)" },
+  { value: "∞", label: "Ambition to Simplify" },
+  { value: "500+", label: "Zimbabwean Businesses" },
+  { value: "0", label: "Training Required" },
 ];
 
 const values = [
   {
     icon: Heart,
-    title: "Built for Small Business",
+    title: "Built for You, Not Corporate",
     description:
-      "We understand the daily challenges of running a shop. EasyPOS is designed from the ground up for business owners who want something simple that just works.",
+      "I created EasyPOS because I saw Zimbabwean business owners struggling with pen-and-paper bookkeeping or overpriced, over-complicated systems. This is made by someone who gets it.",
   },
   {
     icon: Target,
-    title: "Simplicity First",
+    title: "Intentionally Simple",
     description:
-      "No bloated features or complicated setups. We focus on what matters most: helping you sell faster and track your business better.",
+      "No confusing menus. No 50-page manual. No training courses. If you can tap a button and type a number, you can use EasyPOS. It's that straightforward.",
   },
   {
     icon: Lightbulb,
-    title: "Always Improving",
+    title: "Made for Zimbabwe",
     description:
-      "We listen to our users and ship updates regularly. New features, better performance, and more integrations — always evolving.",
+      "Built specifically for Zimbabwean businesses. Local payment methods, ZWL currency support, and prices that make sense for local markets. Made in Zimbabwe, for Zimbabwe.",
   },
   {
     icon: Users,
-    title: "Community Driven",
+    title: "All Sizes Welcome",
     description:
-      "Our roadmap is shaped by real feedback from real business owners. If something can be better, we want to know.",
+      "Whether you're running a small spaza shop, growing boutique, or multi-branch operation, EasyPOS scales with you. No complexity tax.",
   },
   {
     icon: Globe,
-    title: "Made in Africa",
+    title: "Personal Support",
     description:
-      "Built to serve African businesses with local payment methods, currencies, and support that understands the market.",
+      "Not a robot answering your questions. Real support from someone who cares about your success. Get help that actually understands your business.",
   },
   {
     icon: Smartphone,
-    title: "Mobile First",
+    title: "Your Pocket, Your Power",
     description:
-      "Your phone is your most powerful business tool. EasyPOS puts a full point-of-sale system in your pocket.",
+      "Your phone is powerful enough to run your entire POS. No expensive hardware, no IT setup. Just an app that works, offline or online.",
   },
 ];
 
@@ -87,24 +87,25 @@ export default function AboutPage() {
               className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"
               variants={fadeUp}
             >
-              Our Story
+              My Story
             </motion.span>
             <motion.h1
               className="mt-4 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl"
               variants={fadeUp}
               transition={{ duration: 0.5 }}
             >
-              About{" "}
-              <span className="text-primary">EasyPOS</span>
+              I'm <span className="text-primary">Kin Leon Zinzombe</span>, and I
+              Built EasyPOS For You
             </motion.h1>
             <motion.p
               className="mt-6 text-lg leading-relaxed text-muted-foreground"
               variants={fadeUp}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              We&apos;re on a mission to make business management accessible to
-              every entrepreneur. EasyPOS helps small and growing businesses
-              sell, track, and grow — all from a simple app on their phone.
+              EasyPOS exists because I got tired of watching Zimbabwean business
+              owners struggle with pen-and-paper bookkeeping or systems that
+              were intentionally complicated to justify expensive training.
+              You shouldn't have to hire a consultant to run your shop.
             </motion.p>
           </motion.div>
         </div>
@@ -160,22 +161,20 @@ export default function AboutPage() {
             {/* Mission text */}
             <motion.div variants={fadeUp} transition={{ duration: 0.5, delay: 0.2 }}>
               <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                Our Mission
+                Why I Built This
               </span>
               <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-                Making professional tools{" "}
-                <span className="text-primary">accessible to all</span>
+                I wanted to <span className="text-primary">remove barriers</span>,
+                not create them
               </h2>
               <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                Millions of small businesses across Africa and beyond still rely
-                on pen and paper to track their sales. We believe every business
-                deserves access to professional tools — without the complexity
-                or high cost.
+                I watched too many brilliant business owners—people selling clothes, groceries, electronics, services—get held back by tools that were either non-existent or impossibly complicated.
               </p>
               <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                EasyPOS bridges that gap with a mobile-first POS system
-                that&apos;s affordable, intuitive, and powerful enough to grow
-                with your business.
+                Some systems were designed to be hard so you&apos;d pay for training. Others required expensive hardware or internet that many Zimbabwean businesses don&apos;t have access to.
+              </p>
+              <p className="mt-4 text-base leading-relaxed text-muted-foreground font-semibold text-primary">
+                So I decided to build the opposite: a POS system that&apos;s so simple you don&apos;t need training, so affordable you won&apos;t hesitate, and so reliable it works whether you have internet or not.
               </p>
               <div className="mt-8">
                 <Button
@@ -183,7 +182,7 @@ export default function AboutPage() {
                   className="h-11 rounded-xl px-8 text-sm font-semibold"
                   render={<Link href="/features" />}
                 >
-                  See What We Built
+                  See How It Works
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
@@ -206,15 +205,14 @@ export default function AboutPage() {
               className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"
               variants={fadeUp}
             >
-              Our Values
+              Core Values
             </motion.span>
             <motion.h2
               className="mt-4 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl"
               variants={fadeUp}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              What we{" "}
-              <span className="text-primary">stand for</span>
+              What drives <span className="text-primary">every decision</span>
             </motion.h2>
           </motion.div>
 
@@ -262,15 +260,14 @@ export default function AboutPage() {
               variants={fadeUp}
               transition={{ duration: 0.5 }}
             >
-              Join the EasyPOS family
+              Ready to stop doing things the hard way?
             </motion.h2>
             <motion.p
               className="mt-4 text-base text-white/80"
               variants={fadeUp}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              Be part of a growing community of business owners transforming
-              how they run their shops.
+              3-day free trial. No credit card. No setup hassle. Just download and start selling.
             </motion.p>
             <motion.div
               className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
@@ -293,7 +290,7 @@ export default function AboutPage() {
                 className="h-[52px] rounded-xl border-2 border-white/40 bg-transparent px-6 text-white hover:bg-white/10 hover:text-white"
                 render={<Link href="/contact" />}
               >
-                Get in Touch
+                Questions? Let's Talk
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </motion.div>
