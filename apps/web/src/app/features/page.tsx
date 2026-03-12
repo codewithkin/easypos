@@ -14,7 +14,8 @@ import {
   Globe,
   Printer,
   Tag,
-  Download,
+  ArrowRight,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -36,6 +37,12 @@ const features = [
     title: "Blazing-Fast Checkout",
     description:
       "Ring up sales in seconds with an intuitive product grid, barcode scanning, and quick cart management. Accept cash, mobile money, and card payments.",
+    points: [
+      "Product grid optimized for speed",
+      "Multiple payment methods",
+      "Instant digital receipts",
+      "Barcode scanning support",
+    ],
     placeholder:
       "[SCREENSHOT — POS checkout screen with product grid on left, cart summary on right, payment method selector at bottom]",
   },
@@ -44,6 +51,12 @@ const features = [
     title: "Real-Time Inventory",
     description:
       "Know exactly what you have in stock. EasyPOS tracks quantities automatically with every sale and alerts you when products run low.",
+    points: [
+      "Auto stock deduction on sale",
+      "Low-stock alerts",
+      "Category organization",
+      "Product history tracking",
+    ],
     placeholder:
       "[SCREENSHOT — Product list showing stock levels with low-stock warning badges]",
   },
@@ -52,6 +65,12 @@ const features = [
     title: "Sales Analytics & Reports",
     description:
       "Get daily summaries, revenue breakdowns by payment method, and see your top-selling products. Make data-driven decisions to grow faster.",
+    points: [
+      "Daily & weekly reports",
+      "Revenue by payment method",
+      "Top products ranking",
+      "Branch comparison",
+    ],
     placeholder:
       "[SCREENSHOT — Dashboard showing daily revenue chart, top products list, and payment method breakdown]",
   },
@@ -60,6 +79,12 @@ const features = [
     title: "Team & Role Management",
     description:
       "Invite your staff as Admins, Managers, or Cashiers. Each role has specific permissions so your team only sees what they need.",
+    points: [
+      "Role-based access control",
+      "Admin, Manager, Cashier roles",
+      "Per-branch assignments",
+      "Activity tracking",
+    ],
     placeholder:
       "[SCREENSHOT — Team management screen showing user list with roles and invite button]",
   },
@@ -68,6 +93,12 @@ const features = [
     title: "Multi-Branch Operations",
     description:
       "Run multiple store locations under one account. Track sales and inventory per branch, and manage everything centrally.",
+    points: [
+      "Unlimited branch scaling",
+      "Per-branch analytics",
+      "Centralized management",
+      "Branch-specific staff",
+    ],
     placeholder:
       "[SCREENSHOT — Branch selector dropdown and branch-specific sales data]",
   },
@@ -76,12 +107,18 @@ const features = [
     title: "Digital & Printed Receipts",
     description:
       "Generate receipts instantly. Print via Bluetooth thermal printers or share digitally. Customize your receipt header and footer.",
+    points: [
+      "Bluetooth thermal printing",
+      "Digital receipt sharing",
+      "Custom receipt header/footer",
+      "Logo branding",
+    ],
     placeholder:
       "[SCREENSHOT — Receipt preview with customized header, itemized list, and totals]",
   },
 ];
 
-const additionalFeatures = [
+const extraFeatures = [
   {
     icon: Tag,
     title: "Product Tags & Categories",
@@ -117,79 +154,114 @@ const additionalFeatures = [
 export default function FeaturesPage() {
   return (
     <div className="overflow-hidden">
-      {/* ── Hero ─────────────────────────────────────────── */}
-      <section className="relative">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,hsl(149_100%_35%/0.08),transparent_70%)]" />
-        <div className="mx-auto max-w-7xl px-4 pb-16 pt-20 text-center sm:px-6 sm:pt-28 lg:px-8">
+      {/* ── Hero ── */}
+      <section className="bg-secondary/30">
+        <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={stagger}
-            className="mx-auto max-w-2xl"
+            className="mx-auto max-w-3xl"
           >
+            <motion.span
+              className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"
+              variants={fadeUp}
+            >
+              Features
+            </motion.span>
             <motion.h1
-              className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl"
+              className="mt-4 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl"
               variants={fadeUp}
               transition={{ duration: 0.5 }}
             >
-              Powerful features,{" "}
-              <span className="text-primary">simple to use</span>
+              Everything your business{" "}
+              <span className="text-primary">needs in one app</span>
             </motion.h1>
             <motion.p
-              className="mt-6 text-lg text-muted-foreground"
+              className="mt-6 text-lg leading-relaxed text-muted-foreground"
               variants={fadeUp}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              Every tool you need to manage sales, inventory, and your team —
-              all in one app on your phone.
+              From blazing-fast checkout to detailed analytics, EasyPOS has
+              every tool you need to run a smarter, more profitable business.
             </motion.p>
+            <motion.div
+              className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
+              variants={fadeUp}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <a
+                href={downloadUrl}
+                className="inline-flex items-center gap-3 rounded-xl bg-foreground px-6 py-3.5 text-sm font-semibold text-background shadow-lg transition hover:opacity-90"
+              >
+                <Smartphone className="h-5 w-5" />
+                <div className="text-left">
+                  <div className="text-[10px] font-normal leading-none opacity-60">Download on</div>
+                  <div className="text-sm font-bold leading-none">Android</div>
+                </div>
+              </a>
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-[52px] rounded-xl border-2 px-8 text-sm font-semibold"
+                render={<Link href="/pricing" />}
+              >
+                View Pricing
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* ── Alternating features ──────────────────────────── */}
-      <section className="border-t border-border">
+      {/* ── Alternating features ── */}
+      <section className="bg-white">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="space-y-24">
             {features.map((feature, i) => (
               <motion.div
                 key={feature.title}
-                className={`grid items-center gap-12 lg:grid-cols-2 ${
-                  i % 2 === 1 ? "lg:direction-rtl" : ""
+                className={`grid items-center gap-14 lg:grid-cols-2 ${
+                  i % 2 !== 0 ? "lg:[&>*:first-child]:order-2" : ""
                 }`}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, margin: "-80px" }}
                 variants={stagger}
               >
-                <motion.div
-                  className={i % 2 === 1 ? "lg:order-2" : ""}
-                  variants={fadeUp}
-                  transition={{ duration: 0.5 }}
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                    <feature.icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="mt-4 text-2xl font-bold text-foreground">
-                    {feature.title}
-                  </h3>
-                  <p className="mt-3 text-base text-muted-foreground leading-relaxed">
-                    {feature.description}
-                  </p>
-                </motion.div>
-
-                <motion.div
-                  className={i % 2 === 1 ? "lg:order-1" : ""}
-                  variants={fadeUp}
-                  transition={{ duration: 0.5, delay: 0.15 }}
-                >
-                  <div className="overflow-hidden rounded-2xl border border-border bg-muted/50">
-                    <div className="flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10 p-8">
-                      <p className="text-center text-sm font-medium text-muted-foreground">
+                {/* Screenshot placeholder */}
+                <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
+                  <div className="overflow-hidden rounded-3xl border border-border shadow-sm">
+                    <div className="flex aspect-[4/3] flex-col items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10 p-8">
+                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                        <feature.icon className="h-8 w-8 text-primary" />
+                      </div>
+                      <p className="text-center text-xs font-semibold text-muted-foreground">
                         {feature.placeholder}
                       </p>
                     </div>
                   </div>
+                </motion.div>
+
+                {/* Content */}
+                <motion.div variants={fadeUp} transition={{ duration: 0.5, delay: 0.2 }}>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                    <feature.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <h2 className="mt-5 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+                    {feature.title}
+                  </h2>
+                  <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+                    {feature.description}
+                  </p>
+                  <ul className="mt-5 space-y-2.5">
+                    {feature.points.map((p) => (
+                      <li key={p} className="flex items-start gap-3">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span className="text-sm text-muted-foreground">{p}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </motion.div>
               </motion.div>
             ))}
@@ -197,58 +269,8 @@ export default function FeaturesPage() {
         </div>
       </section>
 
-      {/* ── Demo video placeholder ────────────────────────── */}
-      <section className="border-t border-border bg-card/50">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-          <motion.div
-            className="mx-auto max-w-3xl text-center"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={stagger}
-          >
-            <motion.h2
-              className="text-3xl font-bold text-foreground sm:text-4xl"
-              variants={fadeUp}
-              transition={{ duration: 0.5 }}
-            >
-              See EasyPOS in action
-            </motion.h2>
-            <motion.p
-              className="mt-4 text-lg text-muted-foreground"
-              variants={fadeUp}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              Watch a quick walkthrough of how EasyPOS can transform your daily
-              sales workflow.
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            className="mx-auto mt-12 max-w-4xl"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="overflow-hidden rounded-2xl border border-border bg-muted/50 shadow-xl">
-              <div className="flex aspect-video items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10">
-                <div className="text-center">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                    <div className="ml-1 h-0 w-0 border-l-[20px] border-y-[12px] border-l-primary border-y-transparent" />
-                  </div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    [DEMO VIDEO — Upload a walkthrough video showing the full sales flow: add products → checkout → receipt]
-                  </p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── More features grid ────────────────────────────── */}
-      <section className="border-t border-border">
+      {/* ── Extra features grid ── */}
+      <section className="bg-secondary/30">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <motion.div
             className="mx-auto max-w-2xl text-center"
@@ -257,45 +279,50 @@ export default function FeaturesPage() {
             viewport={{ once: true, margin: "-80px" }}
             variants={stagger}
           >
-            <motion.h2
-              className="text-3xl font-bold text-foreground"
+            <motion.span
+              className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"
               variants={fadeUp}
-              transition={{ duration: 0.5 }}
             >
-              And so much more
+              And More
+            </motion.span>
+            <motion.h2
+              className="mt-4 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl"
+              variants={fadeUp}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              Packed with{" "}
+              <span className="text-primary">powerful extras</span>
             </motion.h2>
           </motion.div>
 
           <motion.div
-            className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
             variants={stagger}
           >
-            {additionalFeatures.map((f) => (
+            {extraFeatures.map((f) => (
               <motion.div
                 key={f.title}
-                className="rounded-xl border border-border bg-card p-5"
+                className="rounded-2xl border border-border bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
                 variants={fadeUp}
                 transition={{ duration: 0.4 }}
               >
-                <f.icon className="h-5 w-5 text-primary" />
-                <h4 className="mt-3 text-sm font-semibold text-foreground">
-                  {f.title}
-                </h4>
-                <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-                  {f.description}
-                </p>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
+                  <f.icon className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="mt-4 text-base font-semibold text-foreground">{f.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{f.description}</p>
               </motion.div>
             ))}
           </motion.div>
         </div>
       </section>
 
-      {/* ── Download CTA ──────────────────────────────────── */}
-      <section className="border-t border-border bg-primary/5">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+      {/* ── CTA Banner ── */}
+      <section className="bg-primary">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <motion.div
             className="mx-auto max-w-2xl text-center"
             initial="hidden"
@@ -304,27 +331,43 @@ export default function FeaturesPage() {
             variants={stagger}
           >
             <motion.h2
-              className="text-3xl font-bold text-foreground"
+              className="text-3xl font-extrabold text-white sm:text-4xl"
               variants={fadeUp}
               transition={{ duration: 0.5 }}
             >
-              Ready to try it out?
+              Ready to put these features to work?
             </motion.h2>
             <motion.p
-              className="mt-4 text-lg text-muted-foreground"
+              className="mt-4 text-base text-white/80"
               variants={fadeUp}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              Download the app and start your free 3-day trial today.
+              Start your 3-day free trial today and see exactly what EasyPOS
+              can do for your business.
             </motion.p>
             <motion.div
-              className="mt-8"
+              className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
               variants={fadeUp}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <Button size="lg" className="h-12 px-8 text-base" render={<a href={downloadUrl} />}>
-                <Download className="mr-2 h-5 w-5" />
-                Download EasyPOS
+              <a
+                href={downloadUrl}
+                className="inline-flex items-center gap-3 rounded-xl bg-white px-6 py-3.5 text-sm font-semibold text-foreground shadow-lg transition hover:bg-white/90"
+              >
+                <Smartphone className="h-5 w-5" />
+                <div className="text-left">
+                  <div className="text-[10px] font-normal leading-none opacity-60">Download on</div>
+                  <div className="text-sm font-bold leading-none">Android</div>
+                </div>
+              </a>
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-[52px] rounded-xl border-2 border-white/40 bg-transparent px-6 text-white hover:bg-white/10 hover:text-white"
+                render={<Link href="/pricing" />}
+              >
+                See Pricing
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </motion.div>
           </motion.div>
@@ -333,3 +376,5 @@ export default function FeaturesPage() {
     </div>
   );
 }
+
+
