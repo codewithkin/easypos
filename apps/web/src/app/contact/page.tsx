@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, MapPin, Phone, Send, Smartphone } from "lucide-react";
+import { Mail, Phone, Send, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,16 +33,17 @@ const contactInfo = [
     detail: "+263 77 000 0000",
     href: "tel:+2637700000000",
   },
-  {
-    icon: MapPin,
-    title: "Location",
-    detail: "Harare, Zimbabwe",
-    href: "#",
-  },
 ];
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
 
   return (
     <div className="overflow-hidden">
@@ -131,9 +132,25 @@ export default function ContactPage() {
                   className="mt-8 space-y-5"
                   variants={fadeUp}
                   transition={{ duration: 0.5, delay: 0.1 }}
-                  onSubmit={(e) => {
+                  onSubmit={async (e) => {
                     e.preventDefault();
-                    setSubmitted(true);
+                    setLoading(true);
+                    try {
+                      const response = await fetch("/api/contact", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(formData),
+                      });
+                      if (response.ok) {
+                        setSubmitted(true);
+                      } else {
+                        alert("Failed to send message. Please try again.");
+                      }
+                    } catch (error) {
+                      alert("Error sending message. Please try again.");
+                    } finally {
+                      setLoading(false);
+                    }
                   }}
                 >
                   <div className="grid gap-5 sm:grid-cols-2">
@@ -142,6 +159,10 @@ export default function ContactPage() {
                       <Input
                         id="name"
                         placeholder="Your name"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
                         required
                       />
                     </div>
@@ -151,6 +172,10 @@ export default function ContactPage() {
                         id="email"
                         type="email"
                         placeholder="you@example.com"
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
                         required
                       />
                     </div>
@@ -160,6 +185,10 @@ export default function ContactPage() {
                     <Input
                       id="subject"
                       placeholder="What is this about?"
+                      value={formData.subject}
+                      onChange={(e) =>
+                        setFormData({ ...formData, subject: e.target.value })
+                      }
                       required
                     />
                   </div>
@@ -169,12 +198,16 @@ export default function ContactPage() {
                       id="message"
                       placeholder="Tell us more..."
                       rows={5}
+                      value={formData.message}
+                      onChange={(e) =>
+                        setFormData({ ...formData, message: e.target.value })
+                      }
                       required
                     />
                   </div>
-                  <Button type="submit" size="lg">
+                  <Button type="submit" size="lg" disabled={loading}>
                     <Send className="mr-2 h-4 w-4" />
-                    Send Message
+                    {loading ? "Sending..." : "Send Message"}
                   </Button>
                 </motion.form>
               )}
@@ -226,24 +259,6 @@ export default function ContactPage() {
                     </div>
                   </a>
                 ))}
-              </motion.div>
-
-              {/* Map placeholder */}
-              <motion.div
-                className="mt-8"
-                variants={fadeUp}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                <div className="overflow-hidden rounded-2xl border border-border bg-muted/50">
-                  <div className="flex aspect-[16/10] items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10">
-                    <div className="text-center">
-                      <MapPin className="mx-auto mb-3 h-10 w-10 text-primary/40" />
-                      <p className="text-sm font-medium text-muted-foreground">
-                        [MAP — Replace with an embedded Google Maps iframe or static map image showing your location]
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </motion.div>
             </motion.div>
           </div>

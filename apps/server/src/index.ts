@@ -19,6 +19,7 @@ import billing, { billingWebhook } from "./routes/billing.js";
 import uploads from "./routes/uploads.js";
 import org from "./routes/org.js";
 import admin from "./routes/admin.js";
+import contact from "./routes/contact.js";
 
 const app = new Hono()
   .basePath("/api")
@@ -179,7 +180,8 @@ const app = new Hono()
   .route("/billing", billing)
   .route("/uploads", uploads)
   .route("/org", org)
-  .route("/admin", admin);
+  .route("/admin", admin)
+  .route("/contact", contact);
 
 export type AppType = typeof app;
 export default app;

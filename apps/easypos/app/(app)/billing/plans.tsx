@@ -5,7 +5,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/text";
-import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/back-button";
 import { useAuthStore } from "@/store/auth";
 import { useApiPost } from "@/hooks/use-api";
