@@ -55,7 +55,8 @@ export function PaymentStep() {
     );
 
     const subtotal = cartTotal(cart);
-    const discountAmount = parseFloat(discountInput) || 0;
+    // Use the actual stored discount value, not the input state, for all calculations
+    const discountAmount = payment.discount;
     const finalTotal = Math.max(0, subtotal - discountAmount);
     const tendered = totalTendered(payment.bills);
     const change = changeDue(finalTotal, tendered);
