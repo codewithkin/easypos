@@ -482,16 +482,13 @@ export default function Home() {
             <div className="flex justify-center">
               <div className="relative">
                 <div className="w-[180px] overflow-hidden rounded-[2rem] border-[6px] border-foreground/[0.07] bg-secondary shadow-2xl sm:w-[220px]">
-                  <div className="flex aspect-[9/19] flex-col items-center justify-center gap-2 bg-gradient-to-b from-primary/5 to-primary/10 p-4">
-                    <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-                      <BarChart3 className="h-6 w-6 text-primary" />
-                    </div>
-                    <p className="text-center text-[10px] font-semibold text-muted-foreground">
-                      [HOW IT WORKS SCREENSHOT]
-                    </p>
-                    <p className="px-2 text-center text-[9px] leading-tight text-muted-foreground/70">
-                      Replace with EasyPOS app showing the main navigation and sale flow
-                    </p>
+                  <div className="relative aspect-[9/19]">
+                    <Image
+                      src="/screenshots/sales/new-sale-payment.jpg"
+                      alt="EasyPOS payment step showing sale total and payment method selection"
+                      fill
+                      className="object-cover object-top"
+                    />
                   </div>
                 </div>
                 <div className="absolute left-1/2 top-0 h-5 w-14 -translate-x-1/2 rounded-b-xl bg-foreground/[0.07]" />
@@ -524,13 +521,13 @@ export default function Home() {
           <div className="mt-12 flex flex-col items-center gap-10 lg:hidden">
             <div className="relative">
               <div className="w-[180px] overflow-hidden rounded-[2rem] border-[6px] border-foreground/[0.07] bg-secondary shadow-2xl">
-                <div className="flex aspect-[9/19] flex-col items-center justify-center gap-2 bg-gradient-to-b from-primary/5 to-primary/10 p-4">
-                  <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-                    <BarChart3 className="h-6 w-6 text-primary" />
-                  </div>
-                  <p className="text-center text-[10px] font-semibold text-muted-foreground">
-                    [HOW IT WORKS SCREENSHOT]
-                  </p>
+                <div className="relative aspect-[9/19]">
+                  <Image
+                    src="/screenshots/sales/new-sale-payment.jpg"
+                    alt="EasyPOS payment step showing sale total and payment method selection"
+                    fill
+                    className="object-cover object-top"
+                  />
                 </div>
               </div>
               <div className="absolute left-1/2 top-0 h-5 w-14 -translate-x-1/2 rounded-b-xl bg-foreground/[0.07]" />
