@@ -9,11 +9,15 @@ export default function AppLayout() {
         return <Redirect href="/(auth)/login" />;
     }
 
-    // Check if user is on trial
+    // Trial is active if:
+    // 1. trialEndsAt is set and in the future (normal case), OR
+    // 2. trialPlan is set but trialEndsAt is null (server-side bug grace period)
     const isOnTrial =
         user?.org.plan === "none" &&
-        user?.org.trialEndsAt &&
-        new Date(user.org.trialEndsAt) > new Date();
+        (
+            (user.org.trialEndsAt && new Date(user.org.trialEndsAt) > new Date()) ||
+            (!user.org.trialEndsAt && user.org.trialPlan != null)
+        );
 
     const trialExpired =
         user?.org.plan === "none" && !isOnTrial;

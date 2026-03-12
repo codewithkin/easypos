@@ -53,9 +53,6 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
 
     return (
         <View className="flex-1 bg-card" style={{ paddingTop: insets.top }}>
-            {/* ── Trial Banner ── */}
-            <TrialBanner />
-
             {/* ── Brand Header ── */}
             <View className="px-5 pt-5 pb-4">
                 <View className="flex-row items-center gap-3">
@@ -175,20 +172,22 @@ export default function DrawerLayout() {
     const isTablet = width >= 768;
 
     return (
-        <Drawer
-            drawerContent={(props) => <CustomDrawerContent {...props} />}
-            screenOptions={{
-                headerShown: false,
-                drawerType: isTablet ? "permanent" : "slide",
-                drawerStyle: {
-                    width: isTablet ? 280 : 300,
-                    backgroundColor: "hsl(0 0% 100%)",
-                    borderRightColor: "hsl(203 24% 88%)",
-                },
-                overlayColor: "rgba(0, 0, 0, 0.25)",
-                swipeEnabled: !isTablet,
-            }}
-        >
+        <>
+            <TrialBanner />
+            <Drawer
+                drawerContent={(props) => <CustomDrawerContent {...props} />}
+                screenOptions={{
+                    headerShown: false,
+                    drawerType: isTablet ? "permanent" : "slide",
+                    drawerStyle: {
+                        width: isTablet ? 280 : 300,
+                        backgroundColor: "hsl(0 0% 100%)",
+                        borderRightColor: "hsl(203 24% 88%)",
+                    },
+                    overlayColor: "rgba(0, 0, 0, 0.25)",
+                    swipeEnabled: !isTablet,
+                }}
+            >
             <Drawer.Screen name="index" options={{ title: "Dashboard" }} />
             <Drawer.Screen name="sales" options={{ title: "Sales" }} />
             <Drawer.Screen name="products" options={{ title: "Products" }} />
@@ -196,5 +195,6 @@ export default function DrawerLayout() {
             <Drawer.Screen name="store" options={{ title: "My Store" }} />
             <Drawer.Screen name="test" options={{ title: "System Test" }} />
         </Drawer>
+        </>
     );
 }

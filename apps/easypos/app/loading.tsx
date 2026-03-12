@@ -73,9 +73,12 @@ export default function LoadingScreen() {
             if (!isAuthenticated) {
                 router.replace("/(auth)/login" as any);
             } else if (user?.org.plan === "none") {
-                // Check if trial is still active
+                // Trial is active if:
+                // 1. trialEndsAt is set and in the future (normal case), OR
+                // 2. trialPlan is set but trialEndsAt is null (server-side bug grace period)
                 const trialActive =
-                    user?.org.trialEndsAt && new Date(user.org.trialEndsAt) > new Date();
+                    (user.org.trialEndsAt && new Date(user.org.trialEndsAt) > new Date()) ||
+                    (!user.org.trialEndsAt && user.org.trialPlan != null);
                 if (trialActive) {
                     // Trial is still active — give full app access
                     router.replace("/(app)" as any);

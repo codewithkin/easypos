@@ -22,6 +22,12 @@ export default function PlansScreen() {
     const isFirstTime = currentPlan === "none";
     const [loadingPlan, setLoadingPlan] = useState<Plan | null>(null);
 
+    // Determine whether the trial is still active or has expired
+    const trialStillActive =
+        isFirstTime &&
+        user?.org.trialEndsAt &&
+        new Date(user.org.trialEndsAt) > new Date();
+
     const subscribeMutation = useApiPost<{ paymentId: string; redirectUrl: string }>({
         path: "/billing/subscribe",
     });
@@ -81,7 +87,9 @@ export default function PlansScreen() {
                         </Text>
                         <Text className="text-muted-foreground text-sm text-center mt-1.5 leading-5 px-4">
                             {isFirstTime
-                                ? "Your free trial is ending soon. Pick a plan to continue selling."
+                                ? trialStillActive
+                                    ? "Your free trial is still active. Pick a plan to keep selling after it ends."
+                                    : "Your free trial has ended. Pick a plan to continue selling."
                                 : "All plans include overage protection at $0.02/unit"}
                         </Text>
                     </View>

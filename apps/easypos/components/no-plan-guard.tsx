@@ -34,11 +34,14 @@ export function NoPlanGuard({ children }: NoPlanGuardProps) {
     const user = useAuthStore((s) => s.user);
     const isNoPlan = user?.org.plan === "none";
 
-    // Allow access during an active trial
+    // Allow access during an active trial.
+    // Fallback: if trialPlan is set but trialEndsAt is null (server-side bug), assume still active.
     const isOnTrial =
         isNoPlan &&
-        user?.org.trialEndsAt &&
-        new Date(user.org.trialEndsAt) > new Date();
+        (
+            (user?.org.trialEndsAt && new Date(user.org.trialEndsAt) > new Date()) ||
+            (!user?.org.trialEndsAt && user?.org.trialPlan != null)
+        );
 
     const shouldBlock = isNoPlan && !isOnTrial;
 
