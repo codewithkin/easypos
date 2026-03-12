@@ -106,9 +106,42 @@ const testimonials = [
 ];
 
 const plans = [
-  { name: "Starter", price: PLAN_LIMITS.starter.price, popular: false },
-  { name: "Growth", price: PLAN_LIMITS.growth.price, popular: true },
-  { name: "Enterprise", price: PLAN_LIMITS.enterprise.price, popular: false },
+  {
+    name: "Starter",
+    price: PLAN_LIMITS.starter.price,
+    popular: false,
+    features: [
+      "Up to 50 products",
+      "Single branch",
+      "1 team member",
+      "Basic reporting",
+      "Email support",
+    ],
+  },
+  {
+    name: "Growth",
+    price: PLAN_LIMITS.growth.price,
+    popular: true,
+    features: [
+      "Up to 500 products",
+      "Up to 5 branches",
+      "Up to 10 team members",
+      "Advanced analytics",
+      "Priority support",
+    ],
+  },
+  {
+    name: "Enterprise",
+    price: PLAN_LIMITS.enterprise.price,
+    popular: false,
+    features: [
+      "Unlimited products",
+      "Unlimited branches",
+      "Unlimited team members",
+      "Custom integrations",
+      "24/7 dedicated support",
+    ],
+  },
 ];
 
 export default function Home() {
@@ -652,6 +685,17 @@ export default function Home() {
                   <span className="text-4xl font-extrabold text-foreground">${plan.price}</span>
                   <span className="text-sm text-muted-foreground">/mo</span>
                 </div>
+
+                {/* Features list */}
+                <ul className="mt-6 space-y-2.5 text-left">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-3">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <span className="text-sm text-muted-foreground">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
                 <Button
                   className="mt-6 w-full rounded-xl"
                   variant={plan.popular ? "default" : "outline"}
