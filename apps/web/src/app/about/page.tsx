@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   Heart,
@@ -144,16 +145,13 @@ export default function AboutPage() {
             {/* Team photo */}
             <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
               <div className="overflow-hidden rounded-3xl border border-border bg-white shadow-sm">
-                <div className="flex aspect-[4/3] flex-col items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10 p-8">
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-                    <Users className="h-8 w-8 text-primary" />
-                  </div>
-                  <p className="text-center text-sm font-semibold text-muted-foreground">
-                    [TEAM PHOTO]
-                  </p>
-                  <p className="mt-2 max-w-[220px] text-center text-xs leading-relaxed text-muted-foreground/70">
-                    Replace with a photo of the EasyPOS founding team or workspace
-                  </p>
+                <div className="relative aspect-[4/3]">
+                  <Image
+                    src="/people/team.jpg"
+                    alt="EasyPOS founder and team"
+                    fill
+                    className="object-cover"
+                  />
                 </div>
               </div>
             </motion.div>

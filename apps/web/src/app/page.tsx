@@ -406,16 +406,13 @@ export default function Home() {
 
             <motion.div variants={fadeUp} transition={{ duration: 0.5, delay: 0.2 }}>
               <div className="overflow-hidden rounded-3xl border border-border bg-white shadow-sm">
-                <div className="flex aspect-[4/3] flex-col items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10 p-8">
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-                    <Users className="h-8 w-8 text-primary" />
-                  </div>
-                  <p className="text-center text-sm font-semibold text-muted-foreground">
-                    [LIFESTYLE PHOTO]
-                  </p>
-                  <p className="mt-2 max-w-[220px] text-center text-xs leading-relaxed text-muted-foreground/70">
-                    Replace with a photo of a business owner using EasyPOS on their phone at a shop counter
-                  </p>
+                <div className="relative aspect-[4/3]">
+                  <Image
+                    src="/people/kin.jpg"
+                    alt="Kin Leon Zinzombe, founder of EasyPOS"
+                    fill
+                    className="object-cover"
+                  />
                 </div>
               </div>
             </motion.div>
