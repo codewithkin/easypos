@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, Download, HelpCircle } from "lucide-react";
+import { Check, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -29,18 +29,21 @@ const plans = [
     name: "Starter",
     description: "Perfect for small shops just getting started",
     popular: false,
+    cta: "Get started with Starter",
   },
   {
     key: "growth" as const,
     name: "Growth",
     description: "For growing businesses that need more power",
     popular: true,
+    cta: "Upgrade to Growth",
   },
   {
     key: "enterprise" as const,
     name: "Enterprise",
     description: "Supercharge your business at scale",
     popular: false,
+    cta: "Supercharge with Enterprise",
   },
 ];
 
@@ -91,17 +94,23 @@ export default function PricingPage() {
   return (
     <div className="overflow-hidden">
       {/* ── Hero ─────────────────────────────────────────── */}
-      <section className="relative">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,hsl(149_100%_35%/0.08),transparent_70%)]" />
-        <div className="mx-auto max-w-7xl px-4 pb-16 pt-20 text-center sm:px-6 sm:pt-28 lg:px-8">
+      {/* Hero */}
+      <section className="bg-secondary/30">
+        <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={stagger}
             className="mx-auto max-w-2xl"
           >
+            <motion.span
+              className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"
+              variants={fadeUp}
+            >
+              Pricing
+            </motion.span>
             <motion.h1
-              className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl"
+              className="mt-4 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl"
               variants={fadeUp}
               transition={{ duration: 0.5 }}
             >
@@ -120,8 +129,8 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ── Plan cards ────────────────────────────────────── */}
-      <section className="border-t border-border">
+      {/* ── Plan cards ── */}
+      <section className="bg-white">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <motion.div
             className="grid gap-8 lg:grid-cols-3"
@@ -137,7 +146,7 @@ export default function PricingPage() {
               return (
                 <motion.div
                   key={plan.key}
-                  className={`relative flex flex-col overflow-hidden rounded-2xl border-2 bg-card ${
+                  className={`relative flex flex-col overflow-hidden rounded-2xl border-2 bg-white shadow-sm ${
                     plan.popular ? "border-primary" : "border-border"
                   }`}
                   variants={fadeUp}
@@ -183,7 +192,7 @@ export default function PricingPage() {
                       size="lg"
                       render={<a href={downloadUrl} />}
                     >
-                      Start Free Trial
+                      {plan.cta}
                     </Button>
                   </div>
                 </motion.div>
@@ -199,7 +208,8 @@ export default function PricingPage() {
       </section>
 
       {/* ── FAQ ───────────────────────────────────────────── */}
-      <section className="border-t border-border bg-card/50">
+      {/* FAQ */}
+      <section className="bg-secondary/30">
         <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
           <motion.div
             className="text-center"
@@ -208,15 +218,14 @@ export default function PricingPage() {
             viewport={{ once: true, margin: "-80px" }}
             variants={stagger}
           >
-            <motion.div
-              className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10"
+            <motion.span
+              className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"
               variants={fadeUp}
-              transition={{ duration: 0.5 }}
             >
-              <HelpCircle className="h-6 w-6 text-primary" />
-            </motion.div>
+              FAQ
+            </motion.span>
             <motion.h2
-              className="mt-4 text-3xl font-bold text-foreground"
+              className="mt-4 text-3xl font-extrabold text-foreground"
               variants={fadeUp}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
@@ -244,8 +253,9 @@ export default function PricingPage() {
       </section>
 
       {/* ── Download CTA ──────────────────────────────────── */}
-      <section className="border-t border-border bg-primary/5">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+      {/* Download CTA */}
+      <section className="bg-primary">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <motion.div
             className="mx-auto max-w-2xl text-center"
             initial="hidden"
@@ -254,14 +264,14 @@ export default function PricingPage() {
             variants={stagger}
           >
             <motion.h2
-              className="text-3xl font-bold text-foreground"
+              className="text-3xl font-extrabold text-white"
               variants={fadeUp}
               transition={{ duration: 0.5 }}
             >
               Start your free trial now
             </motion.h2>
             <motion.p
-              className="mt-4 text-lg text-muted-foreground"
+              className="mt-4 text-base text-white/80"
               variants={fadeUp}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
@@ -272,10 +282,16 @@ export default function PricingPage() {
               variants={fadeUp}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <Button size="lg" className="h-12 px-8 text-base" render={<a href={downloadUrl} />}>
-                <Download className="mr-2 h-5 w-5" />
-                Download EasyPOS
-              </Button>
+              <a
+                href={downloadUrl}
+                className="inline-flex items-center gap-3 rounded-xl bg-white px-6 py-3.5 text-sm font-semibold text-foreground shadow-lg transition hover:bg-white/90"
+              >
+                <Smartphone className="h-5 w-5" />
+                <div className="text-left">
+                  <div className="text-[10px] font-normal leading-none opacity-60">Download on</div>
+                  <div className="text-sm font-bold leading-none">Android</div>
+                </div>
+              </a>
             </motion.div>
           </motion.div>
         </div>
