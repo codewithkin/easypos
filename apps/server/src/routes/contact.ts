@@ -1,33 +1,26 @@
-import { Router, Request, Response } from "express";
-import { sendEmail } from "@/lib/email";
+import { Hono } from "hono";
+import { sendEmail } from "../lib/email.js";
+import { zBody } from "../lib/validate.js";
+import { z } from "zod";
 
-const router = Router();
+const contactSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  subject: z.string().min(1, "Subject is required"),
+  message: z.string().min(1, "Message is required"),
+});
 
-interface ContactFormData {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-}
+type ContactForm = z.infer<typeof contactSchema>;
+
+const app = new Hono();
 
 /**
  * POST /api/contact
  * Send a contact form submission email
  */
-router.post("/", async (req: Request, res: Response) => {
+app.post("/", zBody(contactSchema), async (c) => {
   try {
-    const { name, email, subject, message } = req.body as ContactFormData;
-
-    // Validate required fields
-    if (!name || !email || !subject || !message) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: "Invalid email format" });
-    }
+    const { name, email, subject, message } = c.req.valid("json") as ContactForm;
 
     // Send email to support inbox
     await sendEmail({
@@ -61,10 +54,10 @@ router.post("/", async (req: Request, res: Response) => {
       `,
     });
 
-    res.status(200).json({ success: true, message: "Message sent successfully" });
+    return c.json({ success: true, message: "Message sent successfully" }, 200);
   } catch (error) {
     console.error("Contact form error:", error);
-    res.status(500).json({ error: "Failed to send message" });
+    return c.json({ error: "Failed to send message" }, 500);
   }
 });
 
@@ -82,4 +75,4 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
-export default router;
+export default app;
