@@ -757,16 +757,13 @@ export default function Home() {
             >
               <div className="relative">
                 <div className="w-[180px] overflow-hidden rounded-[2rem] border-[6px] border-white/20 bg-white/10 shadow-2xl backdrop-blur-sm sm:w-[200px]">
-                  <div className="flex aspect-[9/19] flex-col items-center justify-center gap-2 p-4">
-                    <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-                      <TrendingUp className="h-6 w-6 text-white" />
-                    </div>
-                    <p className="text-center text-[10px] font-medium text-white/70">
-                      [CTA PHONE SCREENSHOT]
-                    </p>
-                    <p className="px-2 text-center text-[9px] leading-tight text-white/50">
-                      Replace with EasyPOS analytics home screen
-                    </p>
+                  <div className="relative aspect-[9/19]">
+                    <Image
+                      src="/screenshots/dashboard/sales-list.jpg"
+                      alt="EasyPOS sales list showing completed transactions and revenue"
+                      fill
+                      className="object-cover object-top"
+                    />
                   </div>
                 </div>
                 <div className="absolute left-1/2 top-0 h-5 w-14 -translate-x-1/2 rounded-b-xl bg-white/10" />
