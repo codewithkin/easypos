@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   ShoppingCart,
@@ -236,16 +237,14 @@ export default function Home() {
               {/* Phone frame */}
               <div className="relative">
                 <div className="mx-auto w-[200px] overflow-hidden rounded-[2rem] border-[6px] border-foreground/[0.07] bg-background shadow-2xl sm:w-[240px]">
-                  <div className="flex aspect-[9/19] flex-col items-center justify-center gap-2 bg-gradient-to-b from-primary/5 to-primary/10 p-4">
-                    <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-                      <ShoppingCart className="h-6 w-6 text-primary" />
-                    </div>
-                    <p className="text-center text-[10px] font-semibold text-muted-foreground">
-                      [HERO PHONE SCREENSHOT]
-                    </p>
-                    <p className="px-2 text-center text-[9px] leading-tight text-muted-foreground/70">
-                      Replace with EasyPOS sales dashboard showing product grid and today&apos;s totals
-                    </p>
+                  <div className="relative aspect-[9/19]">
+                    <Image
+                      src="/screenshots/dashboard/dashboard-home.jpg"
+                      alt="EasyPOS dashboard showing daily sales and revenue"
+                      fill
+                      className="object-cover object-top"
+                      priority
+                    />
                   </div>
                 </div>
                 {/* Notch */}

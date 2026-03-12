@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   ShoppingCart,
@@ -43,8 +44,8 @@ const features = [
       "Instant digital receipts",
       "Barcode scanning support",
     ],
-    placeholder:
-      "[SCREENSHOT — POS checkout screen with product grid on left, cart summary on right, payment method selector at bottom]",
+    image: "/screenshots/sales/new-sale-products.jpg",
+    alt: "EasyPOS new sale screen showing product grid for fast checkout",
   },
   {
     icon: Package,
@@ -57,8 +58,8 @@ const features = [
       "Category organization",
       "Product history tracking",
     ],
-    placeholder:
-      "[SCREENSHOT — Product list showing stock levels with low-stock warning badges]",
+    image: "/screenshots/products/products-list.jpg",
+    alt: "EasyPOS product list showing stock levels and low-stock alerts",
   },
   {
     icon: BarChart3,
@@ -71,8 +72,8 @@ const features = [
       "Top products ranking",
       "Branch comparison",
     ],
-    placeholder:
-      "[SCREENSHOT — Dashboard showing daily revenue chart, top products list, and payment method breakdown]",
+    image: "/screenshots/dashboard/dashboard-home.jpg",
+    alt: "EasyPOS dashboard showing daily revenue, top products, and sales analytics",
   },
   {
     icon: Users,
@@ -85,8 +86,8 @@ const features = [
       "Per-branch assignments",
       "Activity tracking",
     ],
-    placeholder:
-      "[SCREENSHOT — Team management screen showing user list with roles and invite button]",
+    image: "/screenshots/team/team-management.jpg",
+    alt: "EasyPOS team management screen showing user list with role badges",
   },
   {
     icon: Zap,
@@ -99,8 +100,8 @@ const features = [
       "Centralized management",
       "Branch-specific staff",
     ],
-    placeholder:
-      "[SCREENSHOT — Branch selector dropdown and branch-specific sales data]",
+    image: "/screenshots/store/store-settings.jpg",
+    alt: "EasyPOS store settings showing branch management and configuration",
   },
   {
     icon: Receipt,
@@ -113,8 +114,8 @@ const features = [
       "Custom receipt header/footer",
       "Logo branding",
     ],
-    placeholder:
-      "[SCREENSHOT — Receipt preview with customized header, itemized list, and totals]",
+    image: "/screenshots/sales/sale-receipt.jpg",
+    alt: "EasyPOS receipt showing itemized sale with totals and payment details",
   },
 ];
 
@@ -229,16 +230,16 @@ export default function FeaturesPage() {
                 viewport={{ once: true, margin: "-80px" }}
                 variants={stagger}
               >
-                {/* Screenshot placeholder */}
+                {/* Screenshot */}
                 <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
                   <div className="overflow-hidden rounded-3xl border border-border shadow-sm">
-                    <div className="flex aspect-[4/3] flex-col items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10 p-8">
-                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-                        <feature.icon className="h-8 w-8 text-primary" />
-                      </div>
-                      <p className="text-center text-xs font-semibold text-muted-foreground">
-                        {feature.placeholder}
-                      </p>
+                    <div className="relative aspect-[9/19] sm:aspect-[3/4]">
+                      <Image
+                        src={feature.image}
+                        alt={feature.alt}
+                        fill
+                        className="object-cover object-top"
+                      />
                     </div>
                   </div>
                 </motion.div>
