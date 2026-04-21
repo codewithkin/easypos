@@ -45,7 +45,7 @@ const app = new Hono()
       },
       servers: [
         {
-          url: "http://localhost:3000",
+          url: "http://localhost:8889",
           description: "Development Server",
         },
       ],

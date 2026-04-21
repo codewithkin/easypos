@@ -139,7 +139,7 @@ The organization will be charged/prompted for payment on `nextBillingDate`.
 ## Example cURL Request
 
 ```bash
-curl -X POST http://localhost:3000/api/admin/setup-plan \
+curl -X POST http://localhost:8889/api/admin/setup-plan \
   -H "Content-Type: application/json" \
   -d '{
     "password": "exyro45610y2627291",
@@ -153,7 +153,7 @@ curl -X POST http://localhost:3000/api/admin/setup-plan \
 ## Example JavaScript/Fetch Request
 
 ```javascript
-const response = await fetch('http://localhost:3000/api/admin/setup-plan', {
+const response = await fetch('http://localhost:8889/api/admin/setup-plan', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -183,8 +183,8 @@ console.log(data);
 
 If you're running the server locally:
 ```bash
-# Development server (usually runs on port 3000)
-http://localhost:3000/api/admin/setup-plan
+# Development server (usually runs on port 8889)
+http://localhost:8889/api/admin/setup-plan
 ```
 
 If you're deploying to a server:

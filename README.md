@@ -45,7 +45,7 @@ bun run dev
 
 Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
 Use the Expo Go app to run the mobile application.
-The API is running at [http://localhost:3000](http://localhost:3000).
+The API is running at [http://localhost:8889](http://localhost:8889).
 
 ## Project Structure
 
