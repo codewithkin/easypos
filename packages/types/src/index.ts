@@ -18,9 +18,9 @@ export type Plan = z.infer<typeof planSchema>;
 
 export const PLAN_LIMITS = {
   none: { users: 1, monthlyInvoices: 0, products: 0, categories: 0, branches: 0, price: 0 },
-  starter: { users: 5, monthlyInvoices: 1000, products: 300, categories: 50, branches: 1, price: 10 },
-  growth: { users: 12, monthlyInvoices: 2500, products: 700, categories: 150, branches: 3, price: 30 },
-  enterprise: { users: 20, monthlyInvoices: 10000, products: 1850, categories: 500, branches: 10, price: 75 },
+  starter: { users: 5, monthlyInvoices: 1000, products: 300, categories: 50, branches: 1, price: 20 },
+  growth: { users: 12, monthlyInvoices: 2500, products: 700, categories: 150, branches: 3, price: 50 },
+  enterprise: { users: 20, monthlyInvoices: 10000, products: 1850, categories: 500, branches: 10, price: 90 },
 } as const;
 
 export type PlanLimits = (typeof PLAN_LIMITS)[Plan];
