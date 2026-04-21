@@ -9,6 +9,7 @@ export async function getOrgUsage(orgId: string) {
     where: { id: orgId },
     select: {
       plan: true,
+      trialEndsAt: true,
       maxUsers: true,
       maxMonthlyInvoices: true,
       maxProducts: true,

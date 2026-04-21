@@ -2,6 +2,7 @@ import { createMiddleware } from "hono/factory";
 import db from "@easypos/db";
 import { verifyAccessToken } from "../lib/jwt.js";
 import type { Env } from "../lib/context.js";
+import { getBillingLockState } from "../lib/billing-lock.js";
 
 export const authMiddleware = createMiddleware<Env>(async (c, next) => {
   const header = c.req.header("Authorization");
@@ -19,10 +20,7 @@ export const authMiddleware = createMiddleware<Env>(async (c, next) => {
     c.set("role", payload.role);
     c.set("branchId", payload.branchId);
 
-    // ── Trial enforcement ──────────────────────────────────────
-    // Check if the org is on plan "none" (trial or unpaid).
-    // If the trial has expired, block access with 402.
-    // Billing routes are excluded so users can still pay.
+    // Keep billing/auth routes reachable so locked orgs can recover.
     const path = c.req.path;
     const isBillingRoute = path.startsWith("/api/billing");
     const isAuthRoute = path.startsWith("/api/auth");
@@ -30,16 +28,17 @@ export const authMiddleware = createMiddleware<Env>(async (c, next) => {
     if (!isBillingRoute && !isAuthRoute) {
       const org = await db.organization.findUnique({
         where: { id: payload.orgId },
-        select: { plan: true, trialEndsAt: true },
+        select: { plan: true, trialEndsAt: true, nextBillingDate: true },
       });
 
-      if (org && org.plan === "none") {
-        const now = new Date();
-        if (!org.trialEndsAt || org.trialEndsAt < now) {
+      if (org) {
+        const lockState = getBillingLockState(org);
+        if (lockState.isLocked && lockState.reason) {
           return c.json(
             {
-              error: "trial_expired",
-              message: "Your free trial has ended. Please subscribe to a plan to continue using EasyPOS.",
+              error: lockState.reason,
+              message: lockState.message,
+              lock: lockState,
             },
             402,
           );

@@ -11,6 +11,7 @@ import { authMiddleware } from "../middleware/auth.js";
 import { requireRole } from "../middleware/rbac.js";
 import { initiatePaynowPayment, pollPaynowStatus } from "../lib/billing.js";
 import { applyPlanLimits, getOrgUsage } from "../lib/plan-limits.js";
+import { getBillingLockState } from "../lib/billing-lock.js";
 import { sendSubscriptionInvoiceEmail } from "../lib/email.js";
 
 const billing = new Hono<Env>()
@@ -22,6 +23,11 @@ const billing = new Hono<Env>()
 
     const { org, userCount, productCount, categoryCount, branchCount } =
       await getOrgUsage(orgId);
+    const lock = getBillingLockState({
+      plan: org.plan,
+      trialEndsAt: org.trialEndsAt,
+      nextBillingDate: org.nextBillingDate,
+    });
 
     return c.json({
       plan: org.plan,
@@ -42,6 +48,7 @@ const billing = new Hono<Env>()
       pendingOverageCharges: org.pendingOverageCharges,
       nextBillingDate: org.nextBillingDate,
       billingCycleStart: org.billingCycleStart,
+      lock,
     });
   })
 
