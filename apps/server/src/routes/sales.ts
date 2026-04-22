@@ -18,6 +18,19 @@ import { authMiddleware } from "../middleware/auth.js";
 import { requireRole } from "../middleware/rbac.js";
 import { checkInvoiceLimit, incrementInvoiceCount } from "../lib/plan-limits.js";
 
+type SaleMutationMapMetadata = {
+  clientMutationId?: string;
+  saleId?: string;
+};
+
+function readMappedSaleId(metadata: unknown, clientMutationId: string) {
+  const maybe = metadata as SaleMutationMapMetadata | null;
+  if (!maybe) return null;
+  if (maybe.clientMutationId !== clientMutationId) return null;
+  if (typeof maybe.saleId !== "string") return null;
+  return maybe.saleId;
+}
+
 const sales = new Hono<Env>()
   .use(authMiddleware)
 
@@ -26,10 +39,48 @@ const sales = new Hono<Env>()
     const userId = c.get("userId");
     const orgId = c.get("orgId");
     const branchId = c.get("branchId");
-    const { items, paymentMethod, tax, discount, amountTendered, note, deviceId, customerId } = c.req.valid("json");
+    const {
+      items,
+      paymentMethod,
+      tax,
+      discount,
+      amountTendered,
+      note,
+      deviceId,
+      customerId,
+      clientMutationId,
+    } = c.req.valid("json");
 
     if (!branchId) {
       return c.json({ error: "You must be assigned to a branch to create sales" }, 400);
+    }
+
+    // Idempotency replay safety for offline client retries.
+    if (clientMutationId) {
+      const recentMutationMaps = await db.auditLog.findMany({
+        where: {
+          orgId,
+          action: "SALE_MUTATION_MAP",
+        },
+        select: { metadata: true },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+      });
+
+      const existingSaleId = recentMutationMaps
+        .map((log) => readMappedSaleId(log.metadata, clientMutationId))
+        .find((id): id is string => typeof id === "string");
+
+      if (existingSaleId) {
+        const existingSale = await db.sale.findFirst({
+          where: { id: existingSaleId, orgId },
+          include: { items: true },
+        });
+
+        if (existingSale) {
+          return c.json(existingSale, 200);
+        }
+      }
     }
 
     // ── Plan enforcement: invoice limit ───────────────────────────
@@ -106,6 +157,26 @@ const sales = new Hono<Env>()
 
     // Track invoice count for billing
     await incrementInvoiceCount(orgId, invoiceCheck.overage);
+
+    if (clientMutationId) {
+      try {
+        await db.auditLog.create({
+          data: {
+            action: "SALE_MUTATION_MAP",
+            details: "Offline replay idempotency mapping",
+            metadata: {
+              clientMutationId,
+              saleId: sale.id,
+              receiptNumber: sale.receiptNumber,
+            },
+            userId,
+            orgId,
+          },
+        });
+      } catch (error) {
+        console.error("[SALES] Failed to record mutation mapping", error);
+      }
+    }
 
     return c.json(sale, 201);
   })

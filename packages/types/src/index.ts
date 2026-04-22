@@ -14,6 +14,9 @@ export type SaleStatus = z.infer<typeof saleStatusSchema>;
 export const planSchema = z.enum(["none", "starter", "growth", "enterprise"]);
 export type Plan = z.infer<typeof planSchema>;
 
+export const billingLockReasonSchema = z.enum(["trial_expired", "payment_due"]);
+export type BillingLockReason = z.infer<typeof billingLockReasonSchema>;
+
 // ── Plan Limits & Billing Constants ────────────────────────────────
 
 export const PLAN_LIMITS = {
@@ -302,6 +305,7 @@ export const createSaleRequestSchema = z.object({
   amountTendered: z.number().positive().optional(),
   note: z.string().optional(),
   deviceId: z.string().optional(),
+  clientMutationId: z.string().min(1).max(120).optional(),
 });
 export type CreateSaleRequest = z.infer<typeof createSaleRequestSchema>;
 
@@ -414,5 +418,16 @@ export const billingUsageSchema = z.object({
   pendingOverageCharges: z.number(),
   nextBillingDate: z.coerce.date(),
   billingCycleStart: z.coerce.date(),
+  lock: z
+    .object({
+      isLocked: z.boolean(),
+      reason: billingLockReasonSchema.nullable(),
+      message: z.string().nullable().optional(),
+      plan: planSchema.optional(),
+      trialEndsAt: z.coerce.date().nullable().optional(),
+      nextBillingDate: z.coerce.date().nullable().optional(),
+      serverNow: z.coerce.date().optional(),
+    })
+    .optional(),
 });
 export type BillingUsage = z.infer<typeof billingUsageSchema>;
