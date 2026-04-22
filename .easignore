@@ -1,0 +1,47 @@
+# EAS build archive exclusions for monorepo
+# Keep build context small and avoid uploading local artifacts.
+
+# VCS/IDE
+.git/
+.vscode/
+
+# Dependencies and caches
+node_modules/
+**/node_modules/
+.turbo/
+**/.turbo/
+
+# Local env files
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Logs and temp
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+**/dist/
+**/build/
+**/.next/
+**/.expo/
+**/coverage/
+
+# Monorepo apps not required for native Android build artifact
+apps/web/
+
+# Native app local artifacts
+apps/easypos/dist/
+apps/easypos/.expo/
+apps/easypos/web-build/
+apps/easypos/android/.gradle/
+apps/easypos/android/build/
+apps/easypos/android/app/build/
+apps/easypos/android/.cxx/
+apps/easypos/android/app/.cxx/

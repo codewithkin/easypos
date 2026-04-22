@@ -24,7 +24,7 @@
         "backgroundColor": "#00B25A"
       },
       "package": "com.easypos.app",
-      "versionCode": 6,
+      "versionCode": 11,
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",
@@ -71,9 +71,7 @@
         "projectId": "c68ec085-d12c-4ac8-acd6-7b025900cd91"
       }
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/c68ec085-d12c-4ac8-acd6-7b025900cd91"
     }
