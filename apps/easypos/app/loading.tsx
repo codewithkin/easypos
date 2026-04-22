@@ -22,6 +22,8 @@ export default function LoadingScreen() {
     const initialize = useAuthStore((s) => s.initialize);
     const isInitialized = useAuthStore((s) => s.isInitialized);
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const hasCompletedOnlineSignIn = useAuthStore((s) => s.hasCompletedOnlineSignIn);
+    const billingLockReason = useAuthStore((s) => s.billingLockReason);
     const user = useAuthStore((s) => s.user);
 
     // Logo pulse
@@ -71,7 +73,15 @@ export default function LoadingScreen() {
     useEffect(() => {
         if (isInitialized) {
             if (!isAuthenticated) {
+                // First sign-in must happen online.
+                if (!hasCompletedOnlineSignIn) {
+                    router.replace("/(auth)/login" as any);
+                    return;
+                }
+
                 router.replace("/(auth)/login" as any);
+            } else if (billingLockReason === "payment_due") {
+                router.replace("/(app)/billing/plans" as any);
             } else if (user?.org.plan === "none") {
                 // Trial is active if:
                 // 1. trialEndsAt is set and in the future (normal case), OR
@@ -90,7 +100,7 @@ export default function LoadingScreen() {
                 router.replace("/(app)" as any);
             }
         }
-    }, [isInitialized, isAuthenticated, user]);
+    }, [isInitialized, isAuthenticated, hasCompletedOnlineSignIn, billingLockReason, user]);
 
     const logoStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scale.value }],

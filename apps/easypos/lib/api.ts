@@ -1,5 +1,5 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
-import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./auth-storage";
+import { getAccessToken, getRefreshToken, setTokens, clearTokens, clearCachedUser } from "./auth-storage";
 import { router } from "expo-router";
 
 const BASE_URL = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://localhost:3000";
@@ -19,11 +19,13 @@ export class ApiError extends Error {
 
 // ── Token refresh logic ────────────────────────────────────────────
 
-let refreshPromise: Promise<boolean> | null = null;
+type RefreshResult = "success" | "invalid" | "offline";
 
-async function refreshAccessToken(): Promise<boolean> {
+let refreshPromise: Promise<RefreshResult> | null = null;
+
+async function refreshAccessToken(): Promise<RefreshResult> {
   const refreshToken = await getRefreshToken();
-  if (!refreshToken) return false;
+  if (!refreshToken) return "invalid";
 
   try {
     const { data } = await axios.post<{ accessToken: string; refreshToken: string }>(
@@ -31,14 +33,21 @@ async function refreshAccessToken(): Promise<boolean> {
       { refreshToken },
     );
     await setTokens(data.accessToken, data.refreshToken);
-    return true;
-  } catch {
-    await clearTokens();
-    return false;
+    return "success";
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      if (status === 400 || status === 401 || status === 403) {
+        await Promise.all([clearTokens(), clearCachedUser()]);
+        return "invalid";
+      }
+    }
+
+    return "offline";
   }
 }
 
-function ensureRefresh(): Promise<boolean> {
+function ensureRefresh(): Promise<RefreshResult> {
   if (!refreshPromise) {
     refreshPromise = refreshAccessToken().finally(() => {
       refreshPromise = null;
@@ -67,33 +76,76 @@ apiClient.interceptors.request.use(async (config) => {
 
 // Handle 401 → auto-refresh + retry; 402 → trial expired; convert AxiosError → ApiError
 apiClient.interceptors.response.use(
-  (response) => response,
+  async (response) => {
+    const { useAuthStore } = await import("@/store/auth");
+    useAuthStore.getState().setOfflineMode(false);
+    return response;
+  },
   async (error: AxiosError<{ error?: string; details?: unknown }>) => {
     const original = error.config as RequestWithRetry | undefined;
 
-    // ── 402 Trial Expired → redirect to billing plans ──
+    // ── 402 Billing lock (trial_expired or payment_due) ──
     if (error.response?.status === 402) {
+      const reason = error.response.data?.error;
+      const lockReason =
+        reason === "trial_expired" || reason === "payment_due"
+          ? reason
+          : null;
+      const fallbackMessage =
+        lockReason === "payment_due"
+          ? "Your subscription payment is due. Please complete payment to continue."
+          : "Your free trial has ended. Please subscribe to continue.";
+      const message =
+        typeof (error.response.data as any)?.message === "string"
+          ? (error.response.data as any).message
+          : fallbackMessage;
+
       const { useAuthStore } = await import("@/store/auth");
-      try { router.replace("/(app)/billing/plans" as any); } catch { /* navigation not ready */ }
-      throw new ApiError(402, "Your free trial has ended. Please subscribe to continue.");
+      if (lockReason) {
+        useAuthStore.getState().setBillingLockReason(lockReason);
+        try {
+          router.replace("/(app)/billing/plans" as any);
+        } catch {
+          // navigation not ready
+        }
+      }
+
+      throw new ApiError(402, message, error.response.data?.details);
     }
 
     if (error.response?.status === 401 && original && !original._retry) {
       original._retry = true;
       const refreshed = await ensureRefresh();
-      if (refreshed) {
+      if (refreshed === "success") {
         const newToken = await getAccessToken();
         original.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(original);
       }
 
+      if (refreshed === "offline") {
+        const { useAuthStore } = await import("@/store/auth");
+        useAuthStore.getState().setOfflineMode(true);
+        throw new ApiError(0, "Network unavailable. Working in offline mode.");
+      }
+
       // Refresh failed → session expired, force sign-out
-      await clearTokens();
+      await Promise.all([clearTokens(), clearCachedUser()]);
       // Dynamically import auth store to avoid circular deps
       const { useAuthStore } = await import("@/store/auth");
-      useAuthStore.setState({ user: null, isAuthenticated: false });
+      useAuthStore.setState({
+        user: null,
+        isAuthenticated: false,
+        isOfflineMode: false,
+        billingLockReason: null,
+      });
       try { router.replace("/(auth)/login"); } catch { /* navigation not ready */ }
       throw new ApiError(401, "Session expired. Please sign in again.");
+    }
+
+    if (!error.response) {
+      const { useAuthStore } = await import("@/store/auth");
+      useAuthStore.getState().setOfflineMode(true);
+      throw new ApiError(0, "Network unavailable. Check your connection.");
     }
 
     const status = error.response?.status ?? 0;

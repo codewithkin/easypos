@@ -1,11 +1,29 @@
 import { create } from "zustand";
 import type { AuthUser } from "@easypos/types";
 import { api, ApiError } from "@/lib/api";
-import { setTokens, clearTokens, getRefreshToken } from "@/lib/auth-storage";
+import {
+  setTokens,
+  clearTokens,
+  getRefreshToken,
+  getCachedUser,
+  setCachedUser,
+  clearCachedUser,
+  hasCompletedFirstOnlineSignIn,
+  markFirstOnlineSignInCompleted,
+} from "@/lib/auth-storage";
+
+type BillingLockReason = "trial_expired" | "payment_due";
+
+function isNetworkError(error: unknown) {
+  return error instanceof ApiError && error.status === 0;
+}
 
 interface AuthState {
   user: AuthUser | null;
   isAuthenticated: boolean;
+  isOfflineMode: boolean;
+  hasCompletedOnlineSignIn: boolean;
+  billingLockReason: BillingLockReason | null;
   isLoading: boolean;
   isInitialized: boolean;
 
@@ -15,36 +33,91 @@ interface AuthState {
   register: (data: { orgName: string; email: string; password: string; name: string; logoUrl?: string; trialPlan?: string }) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: AuthUser) => void;
+  setOfflineMode: (isOfflineMode: boolean) => void;
+  setBillingLockReason: (reason: BillingLockReason | null) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
+  isOfflineMode: false,
+  hasCompletedOnlineSignIn: false,
+  billingLockReason: null,
   isLoading: false,
   isInitialized: false,
 
   initialize: async () => {
     try {
       set({ isLoading: true });
-      const refreshToken = await getRefreshToken();
+      const [refreshToken, cachedUser, hasOnlineSignIn] = await Promise.all([
+        getRefreshToken(),
+        getCachedUser(),
+        hasCompletedFirstOnlineSignIn(),
+      ]);
+
       if (!refreshToken) {
-        set({ isInitialized: true, isLoading: false });
+        set({
+          user: null,
+          isAuthenticated: false,
+          isOfflineMode: false,
+          hasCompletedOnlineSignIn: hasOnlineSignIn,
+          billingLockReason: null,
+          isInitialized: true,
+          isLoading: false,
+        });
         return;
       }
 
-      // Try to refresh and get current user
+      // Online refresh is the source of truth when reachable.
       const data = await api.post<{ accessToken: string; refreshToken: string; user: AuthUser }>(
         "/auth/refresh",
         { refreshToken },
       );
 
-      // api.post won't work here since we're calling refresh directly
-      // Let me use the raw refresh approach
       await setTokens(data.accessToken, data.refreshToken);
-      set({ user: data.user, isAuthenticated: true, isInitialized: true, isLoading: false });
-    } catch {
-      await clearTokens();
-      set({ user: null, isAuthenticated: false, isInitialized: true, isLoading: false });
+      await setCachedUser(data.user);
+      await markFirstOnlineSignInCompleted();
+
+      set({
+        user: data.user,
+        isAuthenticated: true,
+        isOfflineMode: false,
+        hasCompletedOnlineSignIn: true,
+        billingLockReason: null,
+        isInitialized: true,
+        isLoading: false,
+      });
+    } catch (error) {
+      const [cachedUser, hasOnlineSignIn] = await Promise.all([
+        getCachedUser(),
+        hasCompletedFirstOnlineSignIn(),
+      ]);
+
+      if (isNetworkError(error) && cachedUser && hasOnlineSignIn) {
+        set({
+          user: cachedUser,
+          isAuthenticated: true,
+          isOfflineMode: true,
+          hasCompletedOnlineSignIn: true,
+          isInitialized: true,
+          isLoading: false,
+        });
+        return;
+      }
+
+      if (!isNetworkError(error)) {
+        await Promise.all([clearTokens(), clearCachedUser()]);
+      }
+
+      set({
+        user: null,
+        isAuthenticated: false,
+        isOfflineMode: false,
+        hasCompletedOnlineSignIn: hasOnlineSignIn,
+        billingLockReason: null,
+        isInitialized: true,
+        isLoading: false,
+      });
     }
   },
 
@@ -56,7 +129,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         { email, password },
       );
       await setTokens(data.accessToken, data.refreshToken);
-      set({ user: data.user, isAuthenticated: true, isLoading: false });
+      await setCachedUser(data.user);
+      await markFirstOnlineSignInCompleted();
+      set({
+        user: data.user,
+        isAuthenticated: true,
+        isOfflineMode: false,
+        hasCompletedOnlineSignIn: true,
+        billingLockReason: null,
+        isLoading: false,
+      });
     } catch (err) {
       set({ isLoading: false });
       throw err;
@@ -71,7 +153,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         data,
       );
       await setTokens(result.accessToken, result.refreshToken);
-      set({ user: result.user, isAuthenticated: true, isLoading: false });
+      await setCachedUser(result.user);
+      await markFirstOnlineSignInCompleted();
+      set({
+        user: result.user,
+        isAuthenticated: true,
+        isOfflineMode: false,
+        hasCompletedOnlineSignIn: true,
+        billingLockReason: null,
+        isLoading: false,
+      });
     } catch (err) {
       set({ isLoading: false });
       throw err;
@@ -84,9 +175,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       // Ignore errors during logout
     }
-    await clearTokens();
-    set({ user: null, isAuthenticated: false });
+    await Promise.all([clearTokens(), clearCachedUser()]);
+    set({
+      user: null,
+      isAuthenticated: false,
+      isOfflineMode: false,
+      billingLockReason: null,
+    });
   },
 
-  setUser: (user) => set({ user }),
+  setUser: (user) => {
+    void setCachedUser(user);
+    set({ user });
+  },
+
+  setOfflineMode: (isOfflineMode) => set({ isOfflineMode }),
+
+  setBillingLockReason: (reason) => set({ billingLockReason: reason }),
 }));

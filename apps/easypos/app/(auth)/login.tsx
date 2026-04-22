@@ -107,6 +107,10 @@ export default function LoginScreen() {
                         </Button>
                     </Link>
                 </View>
+
+                <Text className="text-center text-xs text-muted-foreground mt-4">
+                    First sign-in requires an internet connection.
+                </Text>
             </View>
         </KeyboardAvoidingView>
     );
