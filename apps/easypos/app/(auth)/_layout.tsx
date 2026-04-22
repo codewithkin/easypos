@@ -5,7 +5,7 @@ export default function AuthLayout() {
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
     if (isAuthenticated) {
-        return <Redirect href="/(app)" />;
+        return <Redirect href="/(app)/(drawer)" />;
     }
 
     return (

@@ -32,7 +32,7 @@ export default function NotFoundScreen() {
       </Animated.View>
 
       <Animated.View entering={FadeInUp.delay(200).duration(500)} className="mt-8 w-full max-w-xs">
-        <Link href="/(app)" asChild replace>
+        <Link href="/(app)/(drawer)" asChild replace>
           <Button>
             <Text>Go to Dashboard</Text>
           </Button>

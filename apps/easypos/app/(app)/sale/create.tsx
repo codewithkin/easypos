@@ -1,11 +1,11 @@
 ﻿import { View, Pressable, ActivityIndicator } from "react-native";
+import { useState } from "react";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
 import { Text } from "@/components/ui/text";
-import { BackButton } from "@/components/back-button";
 import { ProductsStep, ProductsFooterInfo } from "./steps/products-step";
 import { CustomerStep } from "./steps/customer-step";
 import { PaymentStep, paymentStepValid } from "./steps/payment-step";
@@ -16,12 +16,16 @@ import {
     totalTendered,
     SALE_STEPS,
 } from "@/store/sale";
+import { useAuthStore } from "@/store/auth";
+import { useSyncStore } from "@/store/sync";
 import { useApiPost } from "@/hooks/use-api";
 import { formatCurrency } from "@easypos/utils";
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/theme";
 import { toast } from "@/lib/toast";
-import type { Sale, PaymentMethod } from "@easypos/types";
+import { ApiError } from "@/lib/api";
+import { createClientMutationId, enqueueSaleMutation } from "@/lib/offline-outbox";
+import type { Sale, CreateSaleRequest } from "@easypos/types";
 
 // â”€â”€ Step metadata â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -45,14 +49,7 @@ interface CreatedCustomer {
     phone: string | null;
 }
 
-interface CreateSaleBody {
-    items: { productId: string; quantity: number; unitPrice?: number }[];
-    paymentMethod: PaymentMethod;
-    customerId?: string;
-    discount?: number;
-    amountTendered?: number;
-    note?: string;
-}
+type CreateSaleBody = CreateSaleRequest;
 
 export default function CreateSaleScreen() {
     const insets = useSafeAreaInsets();
@@ -67,11 +64,16 @@ export default function CreateSaleScreen() {
         reset,
         setCustomer,
     } = useSaleStore();
+    const isOfflineMode = useAuthStore((s) => s.isOfflineMode);
+    const setOfflineMode = useAuthStore((s) => s.setOfflineMode);
+    const refreshPendingCount = useSyncStore((s) => s.refreshPendingCount);
 
     const subtotal = cartTotal(cart);
     const discountAmount = payment.discount;
     const finalTotal = Math.max(0, subtotal - discountAmount);
     const tendered = totalTendered(payment.bills);
+    const [search, setSearch] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
     // â”€â”€ Create customer (for new customers without an id) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -88,15 +90,12 @@ export default function CreateSaleScreen() {
             path: "/sales",
             invalidateKeys: [["sales"], ["reports"]],
             onSuccess: (data) => {
+                setOfflineMode(false);
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 toast.success("Sale completed", `Receipt #${data.receiptNumber ?? ""}`);
                 reset();
                 router.dismissAll();
                 router.push(`/(app)/sale/${data.id}`);
-            },
-            onError: (err) => {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-                toast.error("Sale failed", err.message);
             },
         });
 
@@ -124,6 +123,14 @@ export default function CreateSaleScreen() {
         if (isPending) return;
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
+        if (customer && !customer.id && isOfflineMode) {
+            toast.error(
+                "New customers require internet",
+                "Select an existing customer or skip customer to queue this sale offline.",
+            );
+            return;
+        }
+
         // If customer is new (no id), create them first then complete
         if (customer && !customer.id) {
             createCustomer(
@@ -138,6 +145,13 @@ export default function CreateSaleScreen() {
                         doCreateSale(created.id);
                     },
                     onError: (err) => {
+                        if (err instanceof ApiError && err.status === 0) {
+                            toast.error(
+                                "Cannot create new customer offline",
+                                "Use an existing customer or skip customer while offline.",
+                            );
+                            return;
+                        }
                         toast.error("Could not create customer", err.message);
                     },
                 },
@@ -148,6 +162,7 @@ export default function CreateSaleScreen() {
     }
 
     function doCreateSale(customerId?: string) {
+        const clientMutationId = createClientMutationId();
         const body: CreateSaleBody = {
             items: cart.map((i) => ({
                 productId: i.product.id,
@@ -155,6 +170,7 @@ export default function CreateSaleScreen() {
                 ...(i.selectedPriceLabel ? { unitPrice: i.selectedPrice } : {}),
             })),
             paymentMethod: payment.method,
+            clientMutationId,
         };
 
         if (customerId) body.customerId = customerId;
@@ -162,7 +178,29 @@ export default function CreateSaleScreen() {
         if (payment.method === "CASH" && tendered > 0) body.amountTendered = tendered;
         if (payment.note.trim()) body.note = payment.note.trim();
 
-        createSale(body);
+        createSale(body, {
+            onError: async (err) => {
+                if (err.status === 0) {
+                    await enqueueSaleMutation(body);
+                    await refreshPendingCount();
+                    setOfflineMode(true);
+
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    toast.info(
+                        "Sale queued offline",
+                        "The sale will sync automatically when internet returns.",
+                    );
+
+                    reset();
+                    router.dismissAll();
+                    router.push("/(app)/(drawer)/sales");
+                    return;
+                }
+
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                toast.error("Sale failed", err.message);
+            },
+        });
     }
 
     // â”€â”€ Step-specific footer logic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -223,7 +261,14 @@ export default function CreateSaleScreen() {
 
             {/* â”€â”€ Step body â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <View className="flex-1">
-                {step === 0 && <ProductsStep />}
+                {step === 0 && (
+                    <ProductsStep
+                        search={search}
+                        onSearchChange={setSearch}
+                        selectedCategory={selectedCategory}
+                        onCategoryChange={setSelectedCategory}
+                    />
+                )}
                 {step === 1 && <CustomerStep />}
                 {step === 2 && <PaymentStep />}
                 {step === 3 && <SummaryStep />}

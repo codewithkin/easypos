@@ -43,7 +43,7 @@ export default function BillingConfirmScreen() {
             setIsConfirming(false);
             toast.success("Payment successful", "Your plan has been activated");
             setTimeout(() => {
-                router.replace("/(app)");
+                router.replace("/(app)/(drawer)");
             }, 1000);
             return;
         }
@@ -55,7 +55,7 @@ export default function BillingConfirmScreen() {
                 toast.success("Payment successful", `Plan activated: ${data.plan}`);
                 // Redirect to dashboard after a short delay
                 setTimeout(() => {
-                    router.replace("/(app)");
+                    router.replace("/(app)/(drawer)");
                 }, 1000);
             },
             onError: (err) => {
@@ -100,7 +100,7 @@ export default function BillingConfirmScreen() {
                 </Text>
                 <View className="flex-row gap-2 mt-6 w-full">
                     <Button
-                        onPress={() => router.replace("/(app)")}
+                        onPress={() => router.replace("/(app)/(drawer)")}
                         variant="outline"
                         className="flex-1"
                     >

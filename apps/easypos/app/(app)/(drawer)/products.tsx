@@ -63,8 +63,7 @@ export default function ProductsScreen() {
                 const q = search.toLowerCase();
                 return (
                     p.name.toLowerCase().includes(q) ||
-                    p.sku.toLowerCase().includes(q) ||
-                    (p.barcode ?? "").toLowerCase().includes(q)
+                    p.sku.toLowerCase().includes(q)
                 );
             }
             return true;
@@ -160,7 +159,7 @@ export default function ProductsScreen() {
                     <View className="flex-row items-center bg-card border border-border rounded-xl px-3 h-11">
                         <Ionicons name="search" size={18} color={BRAND.dark} />
                         <TextInput
-                            placeholder="Search by name, SKU, or barcode..."
+                            placeholder="Search by name or SKU..."
                             placeholderTextColor={BRAND.dark}
                             value={search}
                             onChangeText={setSearch}

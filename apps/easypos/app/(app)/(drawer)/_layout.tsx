@@ -6,15 +6,17 @@ import {
 } from "@react-navigation/drawer";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Text } from "@/components/ui/text";
 import { Separator } from "@/components/ui/separator";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { TrialBanner } from "@/components/trial-banner";
 import { useAuthStore } from "@/store/auth";
+import { useSyncStore } from "@/store/sync";
 import { useRole } from "@/hooks/use-role";
 import { BRAND } from "@/lib/theme";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -37,6 +39,13 @@ const NAV_ITEMS: NavItem[] = [
 
 function CustomDrawerContent(props: DrawerContentComponentProps) {
     const user = useAuthStore((s) => s.user);
+    const isOfflineMode = useAuthStore((s) => s.isOfflineMode);
+    const billingLockReason = useAuthStore((s) => s.billingLockReason);
+    const pendingCount = useSyncStore((s) => s.pendingCount);
+    const isSyncing = useSyncStore((s) => s.isSyncing);
+    const lastSyncedAt = useSyncStore((s) => s.lastSyncedAt);
+    const syncNow = useSyncStore((s) => s.syncNow);
+    const refreshPendingCount = useSyncStore((s) => s.refreshPendingCount);
     const logout = useAuthStore((s) => s.logout);
     const { isAdmin, canManage } = useRole();
     const insets = useSafeAreaInsets();
@@ -44,6 +53,10 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
 
     const currentIndex = props.state.index;
     const currentRouteName = props.state.routes[currentIndex]?.name;
+
+    useEffect(() => {
+        void refreshPendingCount();
+    }, [refreshPendingCount]);
 
     const visibleItems = NAV_ITEMS.filter((item) => {
         if (item.adminOnly && !isAdmin) return false;
@@ -103,6 +116,54 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
                         </Text>
                     </View>
                 </View>
+
+                {isOfflineMode ? (
+                    <View className="mt-3 self-start px-2.5 py-1 rounded-full bg-amber-100 border border-amber-300">
+                        <Text className="text-[11px] font-medium text-amber-700">Offline mode</Text>
+                    </View>
+                ) : null}
+
+                {billingLockReason === "payment_due" ? (
+                    <View className="mt-3 self-start px-2.5 py-1 rounded-full bg-destructive/10 border border-destructive/30">
+                        <Text className="text-[11px] font-medium text-destructive">Payment due</Text>
+                    </View>
+                ) : null}
+
+                <Pressable
+                    onPress={async () => {
+                        const result = await syncNow();
+                        if (result.pushed > 0) {
+                            toast.success("Sync complete", `${result.pushed} queued sale(s) uploaded.`);
+                        } else if (result.offline) {
+                            toast.info("Offline", "Reconnect to sync queued sales.");
+                        } else if (result.locked) {
+                            toast.warning("Billing lock", "Payment is due. Complete billing to resume sync.");
+                        } else if (pendingCount === 0) {
+                            toast.info("Up to date", "No queued sales to sync.");
+                        }
+                    }}
+                    disabled={isSyncing}
+                    className={cn(
+                        "mt-3 flex-row items-center justify-between rounded-xl border border-border px-3 py-2",
+                        isSyncing && "opacity-70",
+                    )}
+                >
+                    <View className="flex-row items-center gap-2">
+                        <Ionicons name="sync-outline" size={16} color={BRAND.brand} />
+                        <Text className="text-xs font-medium text-foreground">
+                            {isSyncing ? "Syncing..." : "Sync queued sales"}
+                        </Text>
+                    </View>
+                    <View className="rounded-full bg-primary/10 px-2 py-0.5">
+                        <Text className="text-[11px] font-semibold text-primary">{pendingCount}</Text>
+                    </View>
+                </Pressable>
+
+                {lastSyncedAt ? (
+                    <Text className="mt-1 text-[11px] text-muted-foreground">
+                        Last sync: {new Date(lastSyncedAt).toLocaleTimeString()}
+                    </Text>
+                ) : null}
             </View>
 
             <Separator />
