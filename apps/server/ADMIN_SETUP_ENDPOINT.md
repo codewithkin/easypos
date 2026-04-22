@@ -1,7 +1,12 @@
 # Admin Manual Plan Setup Endpoint
 
 ## Overview
-This endpoint allows you to manually set up a plan for an organization, bypassing the payment system. This is useful for testing, trial periods, or in-person payments.
+This document covers two password-protected admin endpoints:
+
+1. `POST /api/admin/setup-plan` to activate a plan by store name.
+2. `POST /api/admin/setup-monthly-paid` to mark the current monthly payment as paid by store name.
+
+These are useful for testing, trial support, and manual/offline payment scenarios.
 
 **Endpoint**: `POST /api/admin/setup-plan`
 
@@ -24,8 +29,8 @@ Content-Type: application/json
 ### Body
 ```json
 {
-  "password": "exyro45610y2627291",
-  "orgId": "org_xxxxxxxxxxxxx",
+  "password": "your-admin-setup-password",
+  "storeName": "Acme Corp",
   "plan": "growth"
 }
 ```
@@ -33,8 +38,8 @@ Content-Type: application/json
 ### Parameters
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `password` | string | ✅ | Admin password (case-sensitive: `exyro45610y2627291`) |
-| `orgId` | string | ✅ | Organization ID to update |
+| `password` | string | ✅ | Admin setup password from `ADMIN_SETUP_PASSWORD` env var |
+| `storeName` | string | ✅ | Organization name used during registration |
 | `plan` | string | ✅ | Plan name: `starter`, `growth`, or `enterprise` |
 
 ---
@@ -142,8 +147,8 @@ The organization will be charged/prompted for payment on `nextBillingDate`.
 curl -X POST http://localhost:8889/api/admin/setup-plan \
   -H "Content-Type: application/json" \
   -d '{
-    "password": "exyro45610y2627291",
-    "orgId": "clzxxx123",
+    "password": "your-admin-setup-password",
+    "storeName": "Acme Corp",
     "plan": "growth"
   }'
 ```
@@ -157,8 +162,8 @@ const response = await fetch('http://localhost:8889/api/admin/setup-plan', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    password: 'exyro45610y2627291',
-    orgId: 'clzxxx123',
+    password: 'your-admin-setup-password',
+    storeName: 'Acme Corp',
     plan: 'growth'
   })
 });
@@ -174,8 +179,57 @@ console.log(data);
 ⚠️ **This endpoint is protected by a password, not JWT.** This means:
 - Anyone with the correct password can call it
 - Keep the password **secret** and **never commit it** to public repositories
+- Configure password via `ADMIN_SETUP_PASSWORD` environment variable
 - Consider adding IP whitelisting or rate limiting in production
 - This is designed for admin/developer use only during setup and testing
+
+---
+
+## Mark Monthly Paid Endpoint
+
+### URL
+```bash
+POST http://localhost:8889/api/admin/setup-monthly-paid
+```
+
+### Body
+```json
+{
+  "password": "your-admin-setup-password",
+  "storeName": "Acme Corp",
+  "source": "cash-payment-at-counter"
+}
+```
+
+### Success response (200)
+```json
+{
+  "success": true,
+  "message": "Monthly payment marked as paid for store \"Acme Corp\"",
+  "org": {
+    "id": "org_xxxxxxxxxxxxx",
+    "name": "Acme Corp",
+    "plan": "growth",
+    "billingCycleStart": "2026-04-21T10:30:00.000Z",
+    "nextBillingDate": "2026-05-21T10:30:00.000Z",
+    "pendingOverageCharges": 0
+  },
+  "billingStatus": {
+    "plan": "growth",
+    "billingCycleStart": "2026-04-21T10:30:00.000Z",
+    "nextBillingDate": "2026-05-21T10:30:00.000Z",
+    "lock": {
+      "isLocked": false,
+      "reason": null,
+      "message": null,
+      "plan": "growth",
+      "trialEndsAt": null,
+      "nextBillingDate": "2026-05-21T10:30:00.000Z",
+      "serverNow": "2026-04-21T10:30:00.000Z"
+    }
+  }
+}
+```
 
 ---
 

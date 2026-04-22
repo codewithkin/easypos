@@ -1,4 +1,3 @@
-import { env } from "@easypos/env/server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -44,7 +43,7 @@ const app = new Hono()
         description: "Point of Sale Management System API",
       },
       servers: [
-        {
+        { 
           url: "http://localhost:8889",
           description: "Development Server",
         },

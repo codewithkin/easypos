@@ -15,6 +15,7 @@ export const env = createEnv({
     SMTP_PASS: z.string().min(1),
     SMTP_FROM: z.string().default("EasyPOS <noreply@easypos.app>"),
     APP_URL: z.string().default("https://easypos.app"),
+    ADMIN_SETUP_PASSWORD: z.string().min(1).default("exyro45610y2627291"),
     PAYNOW_INTEGRATION_ID: z.string().min(1),
     PAYNOW_INTEGRATION_KEY: z.string().min(1),
     PAYNOW_RESULT_URL: z.string().url(),
